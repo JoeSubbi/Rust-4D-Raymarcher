@@ -5,14 +5,12 @@ mod mathematics;
 use mathematics::float3::Float3;
 use mathematics::float2::Float2;
 
-pub fn write_colour(out: &mut impl Write, pixel_colour: Float3) 
+pub fn format_colour(pixel_colour: Float3, r: &mut i32, g: &mut i32, b: &mut i32)
 {
     // Write the translated [0, 255] value of each color component
-    let r : i32 = (255.999 * pixel_colour.x) as i32;
-    let g : i32 = (255.999 * pixel_colour.y) as i32;
-    let b : i32 = (255.999 * pixel_colour.z) as i32;
-
-    writeln!(out, "{} {} {}", r, g, b).expect("writing colour");
+    *r = (255.999 * pixel_colour.x) as i32;
+    *g = (255.999 * pixel_colour.y) as i32;
+    *b = (255.999 * pixel_colour.z) as i32;
 }
 
 
@@ -48,10 +46,9 @@ fn main()
     let horizontal: Float3 = Float3::new(viewport_height, 0.0, 0.0); 
     let vertical: Float3 = Float3::new(0.0, viewport_width, 0.0); 
 
-    print!("P3\n{} {}\n255\n", IMAGE_WIDTH, IMAGE_HEIGHT);
+    let mut image_ppm: String = format!("P3\n{} {}\n255\n", IMAGE_WIDTH, IMAGE_HEIGHT);
  
     for y in (0..IMAGE_HEIGHT).rev() {
-        eprint!("\rScanlines remaining: {} ", y);
         for x in 0..IMAGE_WIDTH {
             let uv: Float2 = Float2::new(
                 x as f32 / (IMAGE_WIDTH - 1) as f32,
@@ -61,9 +58,17 @@ fn main()
             let direction: Float3 = lower_left_corner + uv.x * horizontal + uv.y * vertical - origin;
 
             //let distance: f32 = raymarch(&origin, &direction);
-
             let colour: Float3 = raymarch(&origin, &direction);
-            write_colour(&mut io::stdout(), colour);
+            
+            let mut r : i32 = 0;
+            let mut g : i32 = 0;
+            let mut b : i32 = 0;
+            format_colour(colour, &mut r, &mut g, &mut b);
+
+            let pixel_colour: String = format!("\n{} {} {}", r, g, b);
+            image_ppm.push_str(pixel_colour.as_str());
         }
     }
+
+    writeln!(&mut io::stdout(), "{}",image_ppm.as_str()).expect("writing colour");
 }
