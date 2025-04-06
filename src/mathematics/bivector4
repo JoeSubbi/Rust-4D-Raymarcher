@@ -1,0 +1,10 @@
+#[derive(Copy, Clone, Default)]
+pub struct bivector4
+{
+    byz : f32,
+    bxz : f32,
+    bxy : f32,
+    bxw : f32,
+    byw : f32,
+    bzw : f32,
+}

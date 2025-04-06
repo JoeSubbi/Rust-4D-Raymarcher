@@ -1,0 +1,164 @@
+use std::fmt::{Display, Formatter, Result};
+use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
+
+#[derive(Copy, Clone, Default)]
+pub struct Float3
+{
+    x : f32,
+    y : f32,
+    z : f32,
+}
+
+impl Float3
+{
+    pub fn new(x: f32, y: f32, z: f32) -> Float3
+    {
+        return Float3{ x: x, y: y, z: z };
+    }
+
+    pub fn length(&self) -> f32
+    {
+        let length : f32 = self.length_squared();
+        return f32::sqrt(length);
+    }
+
+    pub fn length_squared(&self) -> f32
+    {
+        return self.x * self.x + self.y * self.y + self.z * self.z;
+    }
+
+    pub fn normalize(&mut self)
+    {
+        let length : f32 = self.length();
+        if length > 0.0
+        {
+            *self = *self / self.length();
+        }
+    }
+
+    pub fn normalized(&self) -> Float3
+    {
+        let length : f32 = self.length();
+        if length > 0.0
+        {
+            return *self / self.length();
+        }
+        else {
+            return *self;
+        }
+    }
+}
+
+// Output formatting
+impl Display for Float3 {
+    fn fmt(&self, f: &mut Formatter) -> Result {
+        write!(f, "{} {} {}", self.x, self.y, self.z)
+    }
+}
+
+// Float3 + Float3
+impl Add for Float3 {
+    type Output = Float3;
+ 
+    fn add(self, v: Float3) -> Float3 {
+        return Float3::new(self.x + v.x, self.y + v.y, self.z + v.z);
+    }
+}
+
+// Float3 + f32
+impl Add<f32> for Float3 {
+    type Output = Float3;
+ 
+    fn add(self, v: f32) -> Float3 {
+        return Float3::new(self.x + v, self.y + v, self.z + v);
+    }
+}
+
+// Float3 += Float3
+impl AddAssign for Float3 {
+    fn add_assign(&mut self, v: Float3) {
+        *self = *self + v;
+    }
+}
+
+// Float3 += f32
+impl AddAssign<f32> for Float3 {
+    fn add_assign(&mut self, v: f32) {
+        *self = *self + v;
+    }
+}
+ 
+// Float3 - Float3
+impl Sub for Float3 {
+    type Output = Float3;
+ 
+    fn sub(self, v: Float3) -> Float3 {
+        return Float3::new(self.x - v.x, self.y - v.y, self.z - v.z);
+    }
+}
+
+// Float3 - f32
+impl Sub<f32> for Float3 {
+    type Output = Float3;
+ 
+    fn sub(self, v: f32) -> Float3 {
+        return Float3::new(self.x - v, self.y - v, self.z - v);
+    }
+}
+
+// Float3 -= Float3
+impl SubAssign for Float3 {
+    fn sub_assign(&mut self, v: Float3) {
+        *self = *self - v;
+    }
+}
+
+// Float3 -= f32
+impl SubAssign<f32> for Float3 {
+    fn sub_assign(&mut self, v: f32) {
+        *self = *self - v;
+    }
+}
+
+// -Float3
+impl Neg for Float3 {
+    type Output = Float3;
+ 
+    fn neg(self) -> Float3 {
+        return Float3::new(-self.x, -self.y, -self.z);
+    }
+}
+
+// Vec3 * f32
+impl Mul<f32> for Float3 {
+    type Output = Float3;
+ 
+    fn mul(self, v: f32) -> Float3 {
+        return Float3::new(self.x * v, self.y * v, self.z * v);
+    }
+}
+
+// f32 * Vec3
+impl Mul<Float3> for f32 {
+    type Output = Float3;
+ 
+    fn mul(self, v: Float3) -> Float3 {
+        return Float3::new(self * v.x, self * v.y, self * v.z);
+    }
+}
+ 
+// Float3 *= f32
+impl MulAssign<f32> for Float3 {
+    fn mul_assign(&mut self, t: f32) {
+        *self = *self * t;
+    }
+}
+
+// Vec3 / f32
+impl Div<f32> for Float3 {
+    type Output = Float3;
+ 
+    fn div(self, v: f32) -> Float3 {
+        return Float3::new(self.x / v, self.y / v, self.z / v);
+    }
+}
