@@ -4,8 +4,8 @@ use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
 #[derive(Copy, Clone, Default)]
 pub struct Float2
 {
-    x : f32,
-    y : f32,
+    pub x : f32,
+    pub y : f32,
 }
 
 impl Float2
@@ -46,6 +46,12 @@ impl Float2
             return *self;
         }
     }
+
+    pub fn dot(u: Float2, v: Float2) -> f32
+    {
+        return u.x * v.x + u.y * v.y;
+    }
+
 }
 
 // Output formatting

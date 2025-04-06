@@ -4,9 +4,9 @@ use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
 #[derive(Copy, Clone, Default)]
 pub struct Float3
 {
-    x : f32,
-    y : f32,
-    z : f32,
+    pub x : f32,
+    pub y : f32,
+    pub z : f32,
 }
 
 impl Float3
@@ -47,6 +47,22 @@ impl Float3
             return *self;
         }
     }
+
+    
+    pub fn dot(u: Float3, v: Float3) -> f32
+    {
+        return u.x * v.x + u.y * v.y + u.z * v.z;
+    }
+
+    pub fn cross(u: Float3, v: Float3) -> Float3
+    {
+        return Float3::new(
+            u.y * v.z - u.z * v.y,
+            u.z * v.x - u.x * v.z,
+            u.x * v.y - u.y * v.x
+        );
+    }
+
 }
 
 // Output formatting

@@ -1,5 +1,5 @@
 #[derive(Copy, Clone, Default)]
-pub struct bivector3
+pub struct Bivector3
 {
     byz : f32,
     bxz : f32,

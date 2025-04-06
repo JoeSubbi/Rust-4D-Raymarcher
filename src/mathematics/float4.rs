@@ -4,10 +4,10 @@ use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
 #[derive(Copy, Clone, Default)]
 pub struct Float4
 {
-    x : f32,
-    y : f32,
-    z : f32,
-    w : f32,
+    pub x : f32,
+    pub y : f32,
+    pub z : f32,
+    pub w : f32,
 }
 
 impl Float4
@@ -48,6 +48,12 @@ impl Float4
             return *self;
         }
     }
+    
+    pub fn dot(u: Float4, v: Float4) -> f32
+    {
+        return u.x * v.x + u.y * v.y + u.z * v.z + u.w * v.w;
+    }
+
 }
 
 // Output formatting

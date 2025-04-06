@@ -1,9 +1,9 @@
 use std::ops::{Mul, MulAssign};
 
 #[derive(Copy, Clone, Default)]
-pub struct rotor4
+pub struct Rotor4
 {
     a : f32,
-    bv : bivector4,
+    bv : Bivector4,
     p : f32,
 }
