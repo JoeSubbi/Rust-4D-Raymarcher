@@ -90,6 +90,15 @@ impl Add<f32> for Float3 {
     }
 }
 
+// f32 + Float3
+impl Add<Float3> for f32 {
+    type Output = Float3;
+ 
+    fn add(self, v: Float3) -> Float3 {
+        return Float3::new(self + v.x, self + v.y, self + v.z);
+    }
+}
+
 // Float3 += Float3
 impl AddAssign for Float3 {
     fn add_assign(&mut self, v: Float3) {
@@ -119,6 +128,15 @@ impl Sub<f32> for Float3 {
  
     fn sub(self, v: f32) -> Float3 {
         return Float3::new(self.x - v, self.y - v, self.z - v);
+    }
+}
+
+// f32 - Float3
+impl Sub<Float3> for f32 {
+    type Output = Float3;
+ 
+    fn sub(self, v: Float3) -> Float3 {
+        return Float3::new(self - v.x, self - v.y, self - v.z);
     }
 }
 

@@ -1,6 +1,7 @@
+pub mod sphere;
+
 use crate::mathematics::float3::Float3;
-    
-pub fn sphere(p: Float3, r: f32) -> f32
+pub trait SDF
 {
-    return p.length() - r;
+    fn sdf(&self, p: Float3) -> f32;
 }

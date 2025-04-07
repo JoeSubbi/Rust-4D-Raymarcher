@@ -6,8 +6,8 @@ use mathematics::float3::Float3;
 use mathematics::float2::Float2;
 
 mod distance_functions;
-use distance_functions::sphere;
-
+use distance_functions::SDF;
+use distance_functions::sphere::Sphere;
 
 fn format_colour(pixel_colour: Float3) -> String
 {
@@ -21,7 +21,7 @@ fn format_colour(pixel_colour: Float3) -> String
 
 fn get_dist(p: Float3) -> f32
 {
-    return sphere(p, 0.5);
+    return Sphere::new(Float3::new(0.0,0.0,0.0), 1.0).sdf(p);
 }
 
 const MAX_DIST: f32 = 100.0;
@@ -46,6 +46,20 @@ fn raymarch(ro: &Float3, rd: &Float3) -> f32
     return d_origin;
 }
 
+const LIGHT_SOURCE: Float3 = Float3{x: 2.0, y: 2.0, z: -2.0};
+
+fn normal(p: Float3) -> Float3
+{
+    let e: f32 = 0.01;
+    let n: Float3 = get_dist(p) - Float3::new(
+        get_dist(p - Float3::new(e, 0.0, 0.0)),
+        get_dist(p - Float3::new(0.0, e, 0.0)),
+        get_dist(p - Float3::new(0.0, 0.0, e))
+    ).normalized();
+
+    return n;
+}
+
 fn main() 
 {
     const ASPECT_RATIO: f32 = 16.0 / 9.0;
@@ -58,11 +72,11 @@ fn main()
     let viewport_width: f32 = ASPECT_RATIO * viewport_height;
     let focal_length: f32 = 1.0;
 
-    let origin = Float3::new(0.0, 0.0, -2.0);
+    let origin = Float3::new(0.0, 0.0, 2.0);
     let lower_left_corner: Float3 = Float3::new(
         origin.x - viewport_width * 0.5,
         origin.y - viewport_height * 0.5,
-        origin.z + focal_length
+        origin.z - focal_length
     ); 
 
     // Render
@@ -82,9 +96,11 @@ fn main()
             
             let mut colour: Float3 = Float3::new(0.0, 0.0, 0.0);
 
-            if distance < MAX_DIST
+            if distance <= MAX_DIST
             {
-                colour.x = 1.0;
+                let p: Float3 = origin + (distance * direction);
+                let n: Float3 = normal(p);
+                colour = n;
             }
             
             image_ppm.push_str(format_colour(colour).as_str());
