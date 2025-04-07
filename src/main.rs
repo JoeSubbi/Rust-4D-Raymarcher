@@ -6,8 +6,7 @@ use mathematics::float3::Float3;
 use mathematics::float2::Float2;
 
 mod distance_functions;
-use distance_functions::SDF;
-use distance_functions::sphere::Sphere;
+use distance_functions::sdf_sphere;
 
 fn format_colour(pixel_colour: Float3) -> String
 {
@@ -21,7 +20,7 @@ fn format_colour(pixel_colour: Float3) -> String
 
 fn get_dist(p: Float3) -> f32
 {
-    return Sphere::new(Float3::new(0.0,0.0,0.0), 1.0).sdf(p);
+    return sdf_sphere(p, Float3::new(0.0,0.0,0.0), 1.0);
 }
 
 const MAX_DIST: f32 = 100.0;
