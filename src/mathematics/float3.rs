@@ -43,7 +43,8 @@ impl Float3
         {
             return *self / self.length();
         }
-        else {
+        else 
+        {
             return *self;
         }
     }

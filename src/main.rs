@@ -1,5 +1,6 @@
 use std::io;
 use std::io::Write;
+use clap::Parser;
 
 mod camera;
 use camera::Camera;
@@ -57,18 +58,48 @@ fn normal(p: Float3) -> Float3
         get_dist(p - Float3::new(e, 0.0, 0.0)),
         get_dist(p - Float3::new(0.0, e, 0.0)),
         get_dist(p - Float3::new(0.0, 0.0, e))
-    ).normalized();
+    );
+    
+    if n.length_squared() == 0.0
+    {
+        return n;
+    }
 
-    return n;
+    return n.normalized();
+}
+
+fn get_pixel_colour(uv: &Float2, camera: &Camera) -> Float3
+{
+    let mut colour: Float3 = Float3::new(0.0, 0.0, 0.0);
+
+    let direction: Float3 = camera.get_ray_direction(*uv);
+    let distance: f32 = raymarch(&camera.position, &direction);
+
+    if distance <= MAX_DIST
+    {
+        let p: Float3 = camera.position + (distance * direction);
+        let n: Float3 = normal(p);
+        colour = n;
+    }
+
+    return colour;
+}
+
+#[derive(Parser, Debug)]
+struct Args {
+    // Use anti aliasing
+    #[arg(long)]
+    aa: bool,
 }
 
 fn main() 
 {
+    let args: Args = Args::parse();
+    let use_anti_aliasing: bool = args.aa;
+
     const ASPECT_RATIO: f32 = 16.0 / 9.0;
     const IMAGE_WIDTH: i32 = 480;
     const IMAGE_HEIGHT: i32 = (IMAGE_WIDTH as f32 / ASPECT_RATIO) as i32;
-
-    // Camera
 
     let camera: Camera = Camera::new(Float3::new(0.0, 0.0, 2.0), ASPECT_RATIO, 2.0, 1.0);
 
@@ -78,22 +109,39 @@ fn main()
  
     for y in (0..IMAGE_HEIGHT).rev() {
         for x in 0..IMAGE_WIDTH {
-            let uv: Float2 = Float2::new(
-                x as f32 / (IMAGE_WIDTH - 1) as f32,
-                y as f32 / (IMAGE_HEIGHT - 1) as f32
-            );
-
-            let direction: Float3 = camera.get_ray_direction(uv);
-
-            let distance: f32 = raymarch(&camera.position, &direction);
-            
             let mut colour: Float3 = Float3::new(0.0, 0.0, 0.0);
 
-            if distance <= MAX_DIST
+            if !use_anti_aliasing
             {
-                let p: Float3 = camera.position + (distance * direction);
-                let n: Float3 = normal(p);
-                colour = n;
+                let uv: Float2 = Float2::new(
+                    x as f32 / (IMAGE_WIDTH - 1) as f32,
+                    y as f32 / (IMAGE_HEIGHT - 1) as f32
+                );
+                colour = get_pixel_colour(&uv, &camera);
+            }
+            else 
+            {
+                let sample_offsets: [Float2; 9] = [
+                    Float2::new(0.5, 0.5),
+                    Float2::new(0.0, 0.5),
+                    Float2::new(-0.5, 0.5),
+                    Float2::new(0.5, 0.0),
+                    Float2::new(0.0, 0.0),
+                    Float2::new(-0.5, 0.0),
+                    Float2::new(0.5, -0.5),
+                    Float2::new(0.0, -0.5),
+                    Float2::new(-0.5, -0.5)
+                ];
+                for sample_offset in sample_offsets
+                {
+                    let uv: Float2 = Float2::new(
+                        (x as f32 + sample_offset.x) / (IMAGE_WIDTH - 1) as f32,
+                        (y as f32 + sample_offset.y) / (IMAGE_HEIGHT - 1) as f32
+                    );
+                    colour += get_pixel_colour(&uv, &camera);
+                }
+                colour = colour / sample_offsets.len() as f32;
+                
             }
             
             image_ppm.push_str(format_colour(colour).as_str());
