@@ -1,12 +1,15 @@
 use std::io;
 use std::io::Write;
 
-mod mathematics;
-use mathematics::float3::Float3;
-use mathematics::float2::Float2;
+mod camera;
+use camera::Camera;
 
 mod distance_functions;
 use distance_functions::sdf_sphere;
+
+mod mathematics;
+use mathematics::float3::Float3;
+use mathematics::float2::Float2;
 
 fn format_colour(pixel_colour: Float3) -> String
 {
@@ -67,16 +70,7 @@ fn main()
 
     // Camera
 
-    let viewport_height: f32 = 2.0;
-    let viewport_width: f32 = ASPECT_RATIO * viewport_height;
-    let focal_length: f32 = 1.0;
-
-    let origin = Float3::new(0.0, 0.0, 2.0);
-    let lower_left_corner: Float3 = Float3::new(
-        origin.x - viewport_width * 0.5,
-        origin.y - viewport_height * 0.5,
-        origin.z - focal_length
-    ); 
+    let camera: Camera = Camera::new(Float3::new(0.0, 0.0, 2.0), ASPECT_RATIO, 2.0, 1.0);
 
     // Render
 
@@ -89,15 +83,15 @@ fn main()
                 y as f32 / (IMAGE_HEIGHT - 1) as f32
             );
 
-            let direction: Float3 = lower_left_corner + Float3::new(uv.x * viewport_width, uv.y * viewport_height, 0.0) - origin;
+            let direction: Float3 = camera.get_ray_direction(uv);
 
-            let distance: f32 = raymarch(&origin, &direction);
+            let distance: f32 = raymarch(&camera.position, &direction);
             
             let mut colour: Float3 = Float3::new(0.0, 0.0, 0.0);
 
             if distance <= MAX_DIST
             {
-                let p: Float3 = origin + (distance * direction);
+                let p: Float3 = camera.position + (distance * direction);
                 let n: Float3 = normal(p);
                 colour = n;
             }
