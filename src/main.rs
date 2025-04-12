@@ -49,7 +49,7 @@ fn raymarch(ro: &Float3, rd: &Float3) -> f32
     return d_origin;
 }
 
-const LIGHT_SOURCE: Float3 = Float3{x: 2.0, y: 2.0, z: -2.0};
+const LIGHT_SOURCE: Float3 = Float3{x: 2.0, y: 2.0, z: 4.0};
 
 fn normal(p: Float3) -> Float3
 {
@@ -79,7 +79,8 @@ fn get_pixel_colour(uv: &Float2, camera: &Camera) -> Float3
     {
         let p: Float3 = camera.position + (distance * direction);
         let n: Float3 = normal(p);
-        colour = n;
+        let diffuse: f32 = Float3::dot(n, (LIGHT_SOURCE - p).normalized());
+        colour = Float3::new(diffuse, diffuse, diffuse);
     }
 
     return colour;
