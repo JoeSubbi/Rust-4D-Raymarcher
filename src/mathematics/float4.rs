@@ -1,6 +1,8 @@
 use std::fmt::{Display, Formatter, Result};
 use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
 
+use crate::mathematics::bivector4::Bivector4;
+
 #[derive(Copy, Clone, Default)]
 pub struct Float4
 {
@@ -33,7 +35,7 @@ impl Float4
         let length : f32 = self.length();
         if length > 0.0
         {
-            *self = *self / self.length();
+            *self = *self / length;
         }
     }
 
@@ -42,7 +44,7 @@ impl Float4
         let length : f32 = self.length();
         if length > 0.0
         {
-            return *self / self.length();
+            return *self / length;
         }
         else {
             return *self;
@@ -52,6 +54,18 @@ impl Float4
     pub fn dot(u: Float4, v: Float4) -> f32
     {
         return u.x * v.x + u.y * v.y + u.z * v.z + u.w * v.w;
+    }
+
+    pub fn wedge(u: Float4, v: Float4) -> Bivector4
+    {
+        return Bivector4{
+            xy: u.x * v.y - u.y * v.x,
+            xz: u.x * v.z - u.z * v.x,
+            yz: u.y * v.z - u.z * v.y,
+            xw: u.x * v.w - u.w * v.x,
+            yw: u.y * v.w - u.w * v.y,
+            zw: u.z * v.w - u.w * v.z
+        };
     }
 
 }

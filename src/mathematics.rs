@@ -2,6 +2,13 @@ pub mod float2;
 pub mod float3;
 pub mod float4;
 
+pub mod bivector3;
+pub mod bivector4;
+
+pub mod rotor3;
+pub mod rotor4;
+
+
 #[allow(dead_code)]
 const DEGREES_TO_RADIANS: f32 =  0.01745329;
 

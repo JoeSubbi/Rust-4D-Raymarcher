@@ -1,6 +1,8 @@
 use std::fmt::{Display, Formatter, Result};
 use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
 
+use crate::mathematics::bivector3::Bivector3;
+
 #[derive(Copy, Clone, Default)]
 pub struct Float3
 {
@@ -32,7 +34,7 @@ impl Float3
         let length : f32 = self.length();
         if length > 0.0
         {
-            *self = *self / self.length();
+            *self = *self / length;
         }
     }
 
@@ -41,7 +43,7 @@ impl Float3
         let length : f32 = self.length();
         if length > 0.0
         {
-            return *self / self.length();
+            return *self / length;
         }
         else 
         {
@@ -62,6 +64,15 @@ impl Float3
             u.z * v.x - u.x * v.z,
             u.x * v.y - u.y * v.x
         );
+    }
+
+    pub fn wedge(u: Float3, v: Float3) -> Bivector3
+    {
+        return Bivector3{
+            xy: u.x * v.y - u.y * v.x,
+            xz: u.x * v.z - u.z * v.x,
+            yz: u.y * v.z - u.z * v.y,
+        };
     }
 
 }
@@ -164,7 +175,7 @@ impl Neg for Float3 {
     }
 }
 
-// Vec3 * f32
+// Float3 * f32
 impl Mul<f32> for Float3 {
     type Output = Float3;
  

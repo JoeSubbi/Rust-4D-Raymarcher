@@ -1,7 +1,0 @@
-#[derive(Copy, Clone, Default)]
-pub struct Bivector3
-{
-    byz : f32,
-    bxz : f32,
-    bxy : f32,
-}
