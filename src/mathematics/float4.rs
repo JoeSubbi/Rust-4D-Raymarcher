@@ -1,9 +1,11 @@
+use std::cmp::PartialEq;
 use std::fmt::{Display, Formatter, Result};
 use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
 
+use crate::mathematics::approx_equal;
 use crate::mathematics::bivector4::Bivector4;
 
-#[derive(Copy, Clone, Default)]
+#[derive(Copy, Clone, Debug, Default)]
 pub struct Float4
 {
     pub x : f32,
@@ -181,5 +183,16 @@ impl Div<f32> for Float4 {
  
     fn div(self, v: f32) -> Float4 {
         return Float4::new(self.x / v, self.y / v, self.z / v, self.w / v);
+    }
+}
+
+impl PartialEq for Float4
+{
+    fn eq(&self, other: &Self) -> bool 
+    {
+        return approx_equal(self.x, other.x) && 
+               approx_equal(self.y, other.y) && 
+               approx_equal(self.z, other.z) && 
+               approx_equal(self.w, other.w);
     }
 }

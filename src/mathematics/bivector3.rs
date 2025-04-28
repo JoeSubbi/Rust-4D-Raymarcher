@@ -1,6 +1,9 @@
+use std::cmp::PartialEq;
 use std::ops::Neg;
 
-#[derive(Copy, Clone, Default)]
+use crate::mathematics::approx_equal;
+
+#[derive(Copy, Clone, Debug, Default)]
 pub struct Bivector3
 {
     pub yz : f32,
@@ -21,5 +24,15 @@ impl Neg for Bivector3 {
  
     fn neg(self) -> Bivector3 {
         return Bivector3{yz: -self.yz, xz: -self.xz, xy: -self.xy};
+    }
+}
+
+impl PartialEq for Bivector3
+{
+    fn eq(&self, other: &Self) -> bool 
+    {
+        return approx_equal(self.yz,other.yz) &&
+               approx_equal(self.xz, other.xz) &&
+               approx_equal(self.xy, other.xy);
     }
 }

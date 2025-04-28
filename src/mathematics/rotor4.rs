@@ -1,11 +1,11 @@
+use std::cmp::PartialEq;
 use std::ops::{Mul, MulAssign};
+
+use crate::mathematics::approx_equal;
 use crate::mathematics::float4::Float4;
 use crate::mathematics::bivector4::Bivector4;
 
-#[allow(dead_code)]
-pub const IDENTITY: Rotor4 = Rotor4{ a: 1.0, bv: Bivector4{yz: 0.0, xz: 0.0, xy: 0.0, xw: 0.0, yw: 0.0, zw: 0.0}, p: 0.0 };
-
-#[derive(Copy, Clone, Default)]
+#[derive(Copy, Clone, Debug, Default)]
 pub struct Rotor4
 {
     a : f32,
@@ -15,6 +15,8 @@ pub struct Rotor4
 
 impl Rotor4
 {
+    pub const IDENTITY: Rotor4 = Rotor4{ a: 1.0, bv: Bivector4{yz: 0.0, xz: 0.0, xy: 0.0, xw: 0.0, yw: 0.0, zw: 0.0}, p: 0.0 };
+
     pub fn new(a: f32, bv: Bivector4, p: f32) -> Rotor4
     {
         return Rotor4{ a: a, bv: bv, p: p};
@@ -36,7 +38,7 @@ impl Rotor4
                 zw: -sina * bv.zw,
             },
             p: 0.0
-        }
+        }.normalized();
     }
 
     pub fn geometric_product(u: Float4, v: Float4) -> Rotor4
@@ -45,7 +47,7 @@ impl Rotor4
             a: Float4::dot(u, v),
             bv: Float4::wedge(u, v),
             p: 0.0
-        }
+        };
     }
 
     pub fn reverse(r: &Rotor4) -> Rotor4
@@ -362,3 +364,18 @@ impl MulAssign for Rotor4
         *self = *self * rhs;
     }
 }
+
+impl PartialEq for Rotor4
+{
+    fn eq(&self, other: &Self) -> bool 
+    {
+        return approx_equal(self.a, other.a) && 
+               self.bv == other.bv &&
+               approx_equal(self.p, other.p);
+    }
+}
+
+
+#[cfg(test)]
+#[path = "rotor4_tests.rs"]
+mod tests;

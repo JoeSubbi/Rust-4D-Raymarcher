@@ -1,7 +1,9 @@
+use std::cmp::PartialEq;
 use std::fmt::{Display, Formatter, Result};
 use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
 
-#[derive(Copy, Clone, Default)]
+use crate::mathematics::approx_equal;
+#[derive(Copy, Clone, Debug, Default)]
 pub struct Float2
 {
     pub x : f32,
@@ -165,5 +167,14 @@ impl Div<f32> for Float2 {
  
     fn div(self, v: f32) -> Float2 {
         return Float2::new(self.x / v, self.y / v);
+    }
+}
+
+impl PartialEq for Float2
+{
+    fn eq(&self, other: &Self) -> bool 
+    {
+        return approx_equal(self.x, other.x) && 
+               approx_equal(self.y, other.y);
     }
 }
