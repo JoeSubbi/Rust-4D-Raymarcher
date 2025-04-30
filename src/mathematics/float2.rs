@@ -5,7 +5,7 @@ use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
 use super::approx_equal;
 use super::float3::Float3;
 use super::float4::Float4;
-use super::vector::{Vector, VectorGrade1};
+use super::multivectors::{Magnitude, Vector};
 
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Float2
@@ -28,9 +28,9 @@ impl Float2
 
 }
 
-impl VectorGrade1 for Float2 {}
+impl Vector for Float2 {}
 
-impl Vector for Float2
+impl Magnitude for Float2
 {
     fn length_squared(&self) -> f32
     {

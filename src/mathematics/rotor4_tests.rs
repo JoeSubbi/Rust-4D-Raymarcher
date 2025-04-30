@@ -4,7 +4,7 @@ use crate::mathematics::bivector4::Bivector4;
 use crate::mathematics::float4::Float4;
 use crate::mathematics::PI;
 use crate::mathematics::rotor4::Rotor4;
-use crate::mathematics::vector::Vector;
+use crate::mathematics::multivectors::{Magnitude, Rotor};
 
 fn rotate_vector(v: &mut Float4, e1: Float4, e2: Float4, angle: f32)
 {

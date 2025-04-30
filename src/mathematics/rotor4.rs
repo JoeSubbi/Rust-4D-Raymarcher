@@ -2,8 +2,9 @@ use std::cmp::PartialEq;
 use std::ops::{Mul, MulAssign};
 
 use super::approx_equal;
-use super::float4::Float4;
 use super::bivector4::Bivector4;
+use super::float4::Float4;
+use super::multivectors::{Magnitude, Rotor};
 
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Rotor4
@@ -21,9 +22,12 @@ impl Rotor4
     {
         return Rotor4{ a: a, bv: bv, p: p};
     }
+}
 
+impl Rotor<Float4, Bivector4> for Rotor4
+{
     /// Creates a new rotor in the specified bivector given an angle in radians
-    pub fn bivector_angle(bv: &Bivector4, angle: f32) -> Rotor4
+    fn bivector_angle(bv: &Bivector4, angle: f32) -> Rotor4
     {
         let sina: f32 = f32::sin(angle / 2.0);
 
@@ -41,7 +45,7 @@ impl Rotor4
         }.normalized();
     }
 
-    pub fn geometric_product(u: Float4, v: Float4) -> Rotor4
+    fn geometric_product(u: Float4, v: Float4) -> Rotor4
     {
         return Rotor4 {
             a: Float4::dot(u, v),
@@ -50,69 +54,17 @@ impl Rotor4
         };
     }
 
-    pub fn reverse(r: &Rotor4) -> Rotor4
+    fn reverse(r: &Rotor4) -> Rotor4
     {
         return Rotor4::new(r.a, -r.bv, r.p);
     }
 
-    pub fn reverse_me(&mut self)
+    fn reverse_me(&mut self)
     {
         self.bv = -self.bv;
     }
     
-    pub fn length(&self) -> f32
-    {
-        let length : f32 = self.length_squared();
-        return f32::sqrt(length);
-    }
-
-    pub fn length_squared(&self) -> f32
-    {
-        return self.a * self.a + self.bv.yz * self.bv.yz + self.bv.xz * self.bv.xz + self.bv.xy * self.bv.xy +
-               self.bv.xw * self.bv.xw + self.bv.yw * self.bv.yw + self.bv.zw * self.bv.zw + self.p * self.p;
-    }
-
-    pub fn normalize(&mut self)
-    {
-        let length : f32 = self.length();
-        if length > 0.0
-        {
-            self.a /= length;
-            self.bv.yz /= length;
-            self.bv.xz /= length;
-            self.bv.xy /= length;
-            self.bv.xw /= length;
-            self.bv.yw /= length;
-            self.bv.zw /= length;
-            self.p /= length;
-        }
-    }
-
-    pub fn normalized(&self) -> Rotor4
-    {
-        let length : f32 = self.length();
-        if length > 0.0
-        {
-            return Rotor4{
-                a: self.a / length,
-                bv: Bivector4 { 
-                    yz: self.bv.yz / length, 
-                    xz: self.bv.xz / length, 
-                    xy: self.bv.xy / length, 
-                    xw: self.bv.xw / length, 
-                    yw: self.bv.yw / length, 
-                    zw: self.bv.zw / length
-                },
-                p: self.p / length
-            };
-        }
-        else 
-        {
-            return *self;
-        }
-    }
-    
-    pub fn rotate_rotor(a: &Rotor4, b: &Rotor4) -> Rotor4
+    fn rotate_rotor(a: &Rotor4, b: &Rotor4) -> Rotor4
     {
         let e: f32     = -a.bv.xw * b.bv.xw   - a.bv.xy * b.bv.xy   - a.bv.xz * b.bv.xz   - a.bv.yw * b.bv.yw   - a.bv.yz * b.bv.yz   - a.bv.zw * b.bv.zw   + a.p * b.p       + a.a * b.a;
         let exy: f32   = -a.bv.xw * b.bv.yw   + a.bv.xy * b.a       - a.bv.xz * b.bv.yz   + a.bv.yw * b.bv.xw   + a.bv.yz * b.bv.xz   - a.bv.zw * b.p       - a.p * b.bv.zw   + a.a * b.bv.xy;
@@ -137,7 +89,7 @@ impl Rotor4
         };
     }
 
-    pub fn rotate_vector(&self, v: Float4) -> Float4
+    fn rotate_vector(&self, v: Float4) -> Float4
     {
         let s: f32 = self.a;
         let s2: f32 = s * s;
@@ -247,7 +199,7 @@ impl Rotor4
         return r;
     }
 
-    pub fn slerp(from: &Rotor4, to: &Rotor4, ratio: f32) -> Rotor4
+    fn slerp(from: &Rotor4, to: &Rotor4, ratio: f32) -> Rotor4
     {
         // The following SLerp is from:
         // https://referencesource.microsoft.com/#System.Numerics/System/Numerics/Quaternion.cs
@@ -304,22 +256,58 @@ impl Rotor4
     }
     
     /// Gives the angle of this Rotor in Radians
-    pub fn angle(&self) -> f32
+    fn angle(&self) -> f32
     {
         return f32::acos(f32::sqrt(self.a * self.a + self.p * self.p) ) * 2.0;
     }
+}
 
-    pub fn from_to(a: &Rotor4, b: &Rotor4) -> Rotor4
+impl Magnitude for Rotor4
+{
+    fn length_squared(&self) -> f32
     {
-        let difference: Rotor4 = *b * Rotor4::reverse(a);
-        difference.normalized();
-        return difference;
+        return self.a * self.a + self.bv.yz * self.bv.yz + self.bv.xz * self.bv.xz + self.bv.xy * self.bv.xy +
+               self.bv.xw * self.bv.xw + self.bv.yw * self.bv.yw + self.bv.zw * self.bv.zw + self.p * self.p;
     }
 
-    pub fn approx_equal(a: &Rotor4, b: &Rotor4) -> bool
+    fn normalize(&mut self)
     {
-        let angle: f32 = Rotor4::from_to(a, b).angle();
-        return angle < 0.001;
+        let length : f32 = self.length();
+        if length > 0.0
+        {
+            self.a /= length;
+            self.bv.yz /= length;
+            self.bv.xz /= length;
+            self.bv.xy /= length;
+            self.bv.xw /= length;
+            self.bv.yw /= length;
+            self.bv.zw /= length;
+            self.p /= length;
+        }
+    }
+
+    fn normalized(&self) -> Rotor4
+    {
+        let length : f32 = self.length();
+        if length > 0.0
+        {
+            return Rotor4{
+                a: self.a / length,
+                bv: Bivector4 { 
+                    yz: self.bv.yz / length, 
+                    xz: self.bv.xz / length, 
+                    xy: self.bv.xy / length, 
+                    xw: self.bv.xw / length, 
+                    yw: self.bv.yw / length, 
+                    zw: self.bv.zw / length
+                },
+                p: self.p / length
+            };
+        }
+        else 
+        {
+            return *self;
+        }
     }
 }
 

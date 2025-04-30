@@ -3,7 +3,7 @@ use crate::mathematics::bivector3::Bivector3;
 use crate::mathematics::float3::Float3;
 use crate::mathematics::PI;
 use crate::mathematics::rotor3::Rotor3;
-use crate::mathematics::vector::Vector;
+use crate::mathematics::multivectors::{Magnitude, Rotor};
 
 fn rotate_vector(v: &mut Float3, e1: Float3, e2: Float3, angle: f32)
 {

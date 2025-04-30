@@ -1,4 +1,4 @@
-pub mod vector;
+pub mod multivectors;
 
 pub mod float2;
 pub mod float3;

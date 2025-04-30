@@ -2,6 +2,7 @@ use std::cmp::PartialEq;
 use std::ops::Neg;
 
 use super::approx_equal;
+use super::multivectors::Bivector;
 
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Bivector3
@@ -18,6 +19,8 @@ impl Bivector3
         return Bivector3{ yz: yz, xz: xz, xy: xy };
     }
 }
+
+impl Bivector for Bivector3 {}
 
 impl Neg for Bivector3 {
     type Output = Bivector3;

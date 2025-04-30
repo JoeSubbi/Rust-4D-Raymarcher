@@ -6,7 +6,7 @@ use super::approx_equal;
 use super::bivector4::Bivector4;
 use super::float2::Float2;
 use super::float3::Float3;
-use super::vector::{Vector, VectorGrade1};
+use super::multivectors::{Magnitude, Vector};
 
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Float4
@@ -43,9 +43,9 @@ impl Float4
 
 }
 
-impl VectorGrade1 for Float4 {}
+impl Vector for Float4 {}
 
-impl Vector for Float4
+impl Magnitude for Float4
 {
     fn length_squared(&self) -> f32
     {

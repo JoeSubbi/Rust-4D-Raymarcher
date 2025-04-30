@@ -1,6 +1,6 @@
-use crate::mathematics::vector::VectorGrade1;
+use crate::mathematics::multivectors::Vector;
 
-pub fn sdf_sphere<T: VectorGrade1>(p: T, centre: T, radius: f32) -> f32
+pub fn sdf_sphere<T: Vector>(p: T, centre: T, radius: f32) -> f32
 {
     return (p-centre).length() - radius;
 }
