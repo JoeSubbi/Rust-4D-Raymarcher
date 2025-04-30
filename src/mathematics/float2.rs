@@ -20,15 +20,15 @@ impl Float2
     {
         return Float2{ x: x, y: y};
     }
+}
 
-    pub fn dot(u: Float2, v: Float2) -> f32
+impl Vector for Float2 
+{
+    fn dot(u: Float2, v: Float2) -> f32
     {
         return u.x * v.x + u.y * v.y;
     }
-
 }
-
-impl Vector for Float2 {}
 
 impl Magnitude for Float2
 {

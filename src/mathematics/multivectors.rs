@@ -25,7 +25,7 @@ pub trait Vector:
     std::ops::SubAssign +
     std::ops::Sub<Output = Self>
 {
-
+    fn dot(u: Self, v: Self) -> f32;
 }
 
 pub trait Bivector: 

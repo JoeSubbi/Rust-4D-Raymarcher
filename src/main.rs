@@ -12,7 +12,7 @@ mod mathematics;
 use mathematics::float2::Float2;
 use mathematics::float3::Float3;
 use mathematics::float4::Float4;
-use mathematics::multivectors::Magnitude;
+use mathematics::multivectors::{Magnitude, Vector};
 
 fn format_colour(pixel_colour: Float3) -> String
 {

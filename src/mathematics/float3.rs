@@ -22,11 +22,6 @@ impl Float3
     {
         return Float3{ x: x, y: y, z: z };
     }
-    
-    pub fn dot(u: Float3, v: Float3) -> f32
-    {
-        return u.x * v.x + u.y * v.y + u.z * v.z;
-    }
 
     pub fn cross(u: Float3, v: Float3) -> Float3
     {
@@ -45,9 +40,15 @@ impl Float3
             yz: u.y * v.z - u.z * v.y,
         };
     }
-
 }
-impl Vector for Float3 {}
+
+impl Vector for Float3 
+{    
+    fn dot(u: Float3, v: Float3) -> f32
+    {
+        return u.x * v.x + u.y * v.y + u.z * v.z;
+    }
+}
 
 impl Magnitude for Float3
 {

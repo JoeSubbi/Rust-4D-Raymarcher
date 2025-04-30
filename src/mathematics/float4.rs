@@ -23,11 +23,6 @@ impl Float4
     {
         return Float4{ x: x, y: y, z: z, w: w};
     }
-    
-    pub fn dot(u: Float4, v: Float4) -> f32
-    {
-        return u.x * v.x + u.y * v.y + u.z * v.z + u.w * v.w;
-    }
 
     pub fn wedge(u: Float4, v: Float4) -> Bivector4
     {
@@ -40,10 +35,15 @@ impl Float4
             zw: u.z * v.w - u.w * v.z
         };
     }
-
 }
 
-impl Vector for Float4 {}
+impl Vector for Float4 
+{
+    fn dot(u: Float4, v: Float4) -> f32
+    {
+        return u.x * v.x + u.y * v.y + u.z * v.z + u.w * v.w;
+    }
+}
 
 impl Magnitude for Float4
 {

@@ -4,7 +4,7 @@ use std::ops::{Mul, MulAssign};
 use super::approx_equal;
 use super::bivector4::Bivector4;
 use super::float4::Float4;
-use super::multivectors::{Magnitude, Rotor};
+use super::multivectors::{Magnitude, Rotor, Vector};
 
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Rotor4
