@@ -1,7 +1,7 @@
 use std::cmp::PartialEq;
 use std::ops::Neg;
 
-use crate::mathematics::approx_equal;
+use super::approx_equal;
 
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Bivector4

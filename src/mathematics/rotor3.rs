@@ -1,9 +1,9 @@
 use std::cmp::PartialEq;
 use std::ops::{Mul, MulAssign};
 
-use crate::mathematics::approx_equal;
-use crate::mathematics::float3::Float3;
-use crate::mathematics::bivector3::Bivector3;
+use super::approx_equal;
+use super::float3::Float3;
+use super::bivector3::Bivector3;
 
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Rotor3

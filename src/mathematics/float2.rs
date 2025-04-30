@@ -2,7 +2,11 @@ use std::cmp::PartialEq;
 use std::fmt::{Display, Formatter, Result};
 use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
 
-use crate::mathematics::approx_equal;
+use super::approx_equal;
+use super::float3::Float3;
+use super::float4::Float4;
+use super::vector::{Vector, VectorGrade1};
+
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Float2
 {
@@ -17,18 +21,23 @@ impl Float2
         return Float2{ x: x, y: y};
     }
 
-    pub fn length(&self) -> f32
+    pub fn dot(u: Float2, v: Float2) -> f32
     {
-        let length : f32 = self.length_squared();
-        return f32::sqrt(length);
+        return u.x * v.x + u.y * v.y;
     }
 
-    pub fn length_squared(&self) -> f32
+}
+
+impl VectorGrade1 for Float2 {}
+
+impl Vector for Float2
+{
+    fn length_squared(&self) -> f32
     {
         return self.x * self.x + self.y * self.y;
     }
 
-    pub fn normalize(&mut self)
+    fn normalize(&mut self)
     {
         let length : f32 = self.length();
         if length > 0.0
@@ -37,7 +46,7 @@ impl Float2
         }
     }
 
-    pub fn normalized(&self) -> Float2
+    fn normalized(&self) -> Float2
     {
         let length : f32 = self.length();
         if length > 0.0
@@ -48,12 +57,6 @@ impl Float2
             return *self;
         }
     }
-
-    pub fn dot(u: Float2, v: Float2) -> f32
-    {
-        return u.x * v.x + u.y * v.y;
-    }
-
 }
 
 // Output formatting
@@ -110,6 +113,15 @@ impl Sub<f32> for Float2 {
  
     fn sub(self, v: f32) -> Float2 {
         return Float2::new(self.x - v, self.y - v);
+    }
+}
+
+// f32 - Float2
+impl Sub<Float2> for f32 {
+    type Output = Float2;
+ 
+    fn sub(self, v: Float2) -> Float2 {
+        return Float2::new(self - v.x, self - v.y);
     }
 }
 
@@ -176,5 +188,22 @@ impl PartialEq for Float2
     {
         return approx_equal(self.x, other.x) && 
                approx_equal(self.y, other.y);
+    }
+}
+
+
+impl From<Float3> for Float2
+{
+    fn from(item: Float3) -> Self
+    {
+        return Float2::new(item.x, item.y);
+    }
+}
+
+impl From<Float4> for Float2
+{
+    fn from(item: Float4) -> Self
+    {
+        return Float2::new(item.x, item.y);
     }
 }

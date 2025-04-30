@@ -2,8 +2,11 @@ use std::cmp::PartialEq;
 use std::fmt::{Display, Formatter, Result};
 use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
 
-use crate::mathematics::approx_equal;
-use crate::mathematics::bivector3::Bivector3;
+use super::approx_equal;
+use super::bivector3::Bivector3;
+use super::float2::Float2;
+use super::float4::Float4;
+use super::vector::{Vector, VectorGrade1};
 
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Float3
@@ -19,40 +22,6 @@ impl Float3
     {
         return Float3{ x: x, y: y, z: z };
     }
-
-    pub fn length(&self) -> f32
-    {
-        let length : f32 = self.length_squared();
-        return f32::sqrt(length);
-    }
-
-    pub fn length_squared(&self) -> f32
-    {
-        return self.x * self.x + self.y * self.y + self.z * self.z;
-    }
-
-    pub fn normalize(&mut self)
-    {
-        let length : f32 = self.length();
-        if length > 0.0
-        {
-            *self = *self / length;
-        }
-    }
-
-    pub fn normalized(&self) -> Float3
-    {
-        let length : f32 = self.length();
-        if length > 0.0
-        {
-            return *self / length;
-        }
-        else 
-        {
-            return *self;
-        }
-    }
-
     
     pub fn dot(u: Float3, v: Float3) -> f32
     {
@@ -77,6 +46,38 @@ impl Float3
         };
     }
 
+}
+
+impl VectorGrade1 for Float3 {}
+
+impl Vector for Float3
+{
+    fn length_squared(&self) -> f32
+    {
+        return self.x * self.x + self.y * self.y + self.z * self.z;
+    }
+
+    fn normalize(&mut self)
+    {
+        let length : f32 = self.length();
+        if length > 0.0
+        {
+            *self = *self / length;
+        }
+    }
+
+    fn normalized(&self) -> Float3
+    {
+        let length : f32 = self.length();
+        if length > 0.0
+        {
+            return *self / length;
+        }
+        else 
+        {
+            return *self;
+        }
+    }
 }
 
 // Output formatting
@@ -218,5 +219,22 @@ impl PartialEq for Float3
         return approx_equal(self.x, other.x) && 
                approx_equal(self.y, other.y) && 
                approx_equal(self.z, other.z);
+    }
+}
+
+
+impl From<Float2> for Float3
+{
+    fn from(item: Float2) -> Self
+    {
+        return Float3::new(item.x, item.y, 0.0);
+    }
+}
+
+impl From<Float4> for Float3
+{
+    fn from(item: Float4) -> Self
+    {
+        return Float3::new(item.x, item.y, item.z);
     }
 }

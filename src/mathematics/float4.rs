@@ -2,8 +2,11 @@ use std::cmp::PartialEq;
 use std::fmt::{Display, Formatter, Result};
 use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
 
-use crate::mathematics::approx_equal;
-use crate::mathematics::bivector4::Bivector4;
+use super::approx_equal;
+use super::bivector4::Bivector4;
+use super::float2::Float2;
+use super::float3::Float3;
+use super::vector::{Vector, VectorGrade1};
 
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Float4
@@ -19,38 +22,6 @@ impl Float4
     pub fn new(x: f32, y: f32, z: f32, w: f32) -> Float4
     {
         return Float4{ x: x, y: y, z: z, w: w};
-    }
-
-    pub fn length(&self) -> f32
-    {
-        let length : f32 = self.length_squared();
-        return f32::sqrt(length);
-    }
-
-    pub fn length_squared(&self) -> f32
-    {
-        return self.x * self.x + self.y * self.y + self.z * self.z + self.w * self.w;
-    }
-
-    pub fn normalize(&mut self)
-    {
-        let length : f32 = self.length();
-        if length > 0.0
-        {
-            *self = *self / length;
-        }
-    }
-
-    pub fn normalized(&self) -> Float4
-    {
-        let length : f32 = self.length();
-        if length > 0.0
-        {
-            return *self / length;
-        }
-        else {
-            return *self;
-        }
     }
     
     pub fn dot(u: Float4, v: Float4) -> f32
@@ -70,6 +41,37 @@ impl Float4
         };
     }
 
+}
+
+impl VectorGrade1 for Float4 {}
+
+impl Vector for Float4
+{
+    fn length_squared(&self) -> f32
+    {
+        return self.x * self.x + self.y * self.y + self.z * self.z + self.w * self.w;
+    }
+
+    fn normalize(&mut self)
+    {
+        let length : f32 = self.length();
+        if length > 0.0
+        {
+            *self = *self / length;
+        }
+    }
+
+    fn normalized(&self) -> Float4
+    {
+        let length : f32 = self.length();
+        if length > 0.0
+        {
+            return *self / length;
+        }
+        else {
+            return *self;
+        }
+    }
 }
 
 // Output formatting
@@ -126,6 +128,15 @@ impl Sub<f32> for Float4 {
  
     fn sub(self, v: f32) -> Float4 {
         return Float4::new(self.x - v, self.y - v, self.z - v, self.w - v);
+    }
+}
+
+// f32 - Float3
+impl Sub<Float4> for f32 {
+    type Output = Float4;
+ 
+    fn sub(self, v: Float4) -> Float4 {
+        return Float4::new(self - v.x, self - v.y, self - v.z, self - v.w);
     }
 }
 
@@ -194,5 +205,22 @@ impl PartialEq for Float4
                approx_equal(self.y, other.y) && 
                approx_equal(self.z, other.z) && 
                approx_equal(self.w, other.w);
+    }
+}
+
+
+impl From<Float2> for Float4
+{
+    fn from(item: Float2) -> Self
+    {
+        return Float4::new(item.x, item.y, 0.0, 0.0);
+    }
+}
+
+impl From<Float3> for Float4
+{
+    fn from(item: Float3) -> Self
+    {
+        return Float4::new(item.x, item.y, item.z, 0.0);
     }
 }
