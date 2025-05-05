@@ -23,7 +23,10 @@ pub trait Vector:
     std::ops::AddAssign +
     std::ops::Neg<Output = Self> +
     std::ops::SubAssign +
-    std::ops::Sub<Output = Self>
+    std::ops::Sub<Output = Self> +
+    std::ops::Mul<f32, Output = Self> + 
+    std::ops::MulAssign<f32> + 
+    std::ops::Div<f32, Output = Self>
 {
     fn dot(u: Self, v: Self) -> f32;
 }
