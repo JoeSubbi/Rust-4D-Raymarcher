@@ -1,5 +1,6 @@
 use std::path::Path;
-use std::time::{Instant, Duration};
+use std::time::{Duration, Instant};
+use std::sync::Mutex;
 
 use clap::Parser;
 
@@ -19,23 +20,29 @@ mod camera;
 use camera::Camera;
 
 mod distance_functions;
-use distance_functions::sdf_sphere;
+use distance_functions::{sdf_box3, sdf_box4, sdf_sphere};
 
 mod mathematics;
+use mathematics::bivector3::Bivector3;
+use mathematics::bivector4::Bivector4;
 use mathematics::float2::Float2;
 use mathematics::float3::Float3;
 use mathematics::float4::Float4;
-use mathematics::multivectors::{Magnitude, Vector};
+use mathematics::multivectors::{Magnitude, Vector, Rotor};
+use mathematics::rotor3::Rotor3;
+use mathematics::rotor4::Rotor4;
 
 
 fn get_dist3(p: Float3) -> f32
 {
-    return sdf_sphere::<Float3>(p, Float3::new(0.0,0.0,0.0), 1.0);
+    //return sdf_sphere::<Float3>(p, Float3::new(0.0,0.0,0.0), 1.0);
+    return sdf_box3(p, Float3::new(0.0,0.0,0.0), Float3::new(0.5,0.5,0.5))
 }
 
 fn get_dist4(p: Float4) -> f32
 {
-    return sdf_sphere::<Float4>(p, Float4::new(0.0,0.0,0.0, 0.0), 1.0);
+    //return sdf_sphere::<Float4>(p, Float4::new(0.0,0.0,0.0, 0.0), 1.0);
+    return sdf_box4(p, Float4::new(0.0,0.0,0.0, 0.0), Float4::new(0.5,0.5,0.5, 0.5))
 }
 
 const MAX_DIST: f32 = 100.0;
@@ -100,42 +107,54 @@ fn get_pixel_colour(uv: &Float2, camera: &Camera, render_4d: bool) -> Float3
     let mut colour: Float3 = Float3::new(0.0, 0.0, 0.0);
 
     let direction: Float3 = camera.get_ray_direction(*uv);
-    
+
     if !render_4d
     {
-        let distance: f32 = raymarch(&camera.position, &direction, get_dist3);  
+        let a: f32 = *APPLICATION_TIME.lock().unwrap() as f32;
+        let r: Rotor3 = Rotor3::bivector_angle(&Bivector3::new(1.0, 0.0, 0.0), a);
+
+        let ro: Float3 = r * camera.position;
+        let rd: Float3 = r * direction;
+
+        let distance: f32 = raymarch(&ro, &rd, get_dist3);  
     
         if distance <= MAX_DIST
         {
-            let p: Float3 = camera.position + (distance * direction);
+            let p: Float3 = ro + (distance * rd);
             let n: Float3 = normal3(p);
             
-            const LIGHT_SOURCE: Float3 = Float3{x: 2.0, y: 2.0, z: 4.0};
+            let light_source: Float3 = r * Float3{x: 2.0, y: 2.0, z: 4.0};
 
-            let diffuse: f32 = Float3::dot(n, (LIGHT_SOURCE - p).normalized());
+            let diffuse: f32 = Float3::dot(n, (light_source - p).normalized()) * 0.5 + 0.5;;
             colour = Float3::new(diffuse, diffuse, diffuse);
         }
     }
     else 
     {
-        let position_4d = Float4::from(camera.position);
-        let direction_4d = Float4::from(direction);
-        let distance: f32 = raymarch(&position_4d, &direction_4d, get_dist4);  
+        let a: f32 = *APPLICATION_TIME.lock().unwrap() as f32;
+        let r: Rotor4 = Rotor4::bivector_angle(&Bivector4::new(1.0, 1.0, 1.0, 1.0, 1.0, 1.0), a);
+
+        let ro: Float4 = r * Float4::from(camera.position);
+        let rd: Float4 = r * Float4::from(direction);
+
+        let distance: f32 = raymarch(&ro, &rd, get_dist4);  
     
         if distance <= MAX_DIST
         {
-            let p: Float4 = position_4d + (distance * direction_4d);
+            let p: Float4 = ro + (distance * rd);
             let n: Float4 = normal4(p);
             
-            const LIGHT_SOURCE: Float4 = Float4{x: 2.0, y: 2.0, z: 4.0, w: 0.0};
+            let light_source: Float4 = r * Float4{x: 2.0, y: 2.0, z: 4.0, w: 0.0};
 
-            let diffuse: f32 = Float4::dot(n, (LIGHT_SOURCE - p).normalized());
+            let diffuse: f32 = Float4::dot(n, (light_source - p).normalized()) * 0.5 + 0.5;
             colour = Float3::new(diffuse, diffuse, diffuse);
         }
     }
 
     return colour;
 }
+
+
 
 fn update(delta_time: f64)
 {
@@ -215,13 +234,15 @@ struct Args {
     d: bool
 }
 
+static APPLICATION_TIME: Mutex<f64> = Mutex::new(0.0f64);
+
 fn main() -> Result<(), String>
 {
     let args: Args = Args::parse();
     let use_anti_aliasing: bool = args.aa;
     let render_4d: bool = !args.d;
 
-    let application: Application = Application::new(16.0 / 9.0, 480, use_anti_aliasing, render_4d, 120);
+    let application: Application = Application::new(16.0 / 9.0, 480, use_anti_aliasing, render_4d);
 
 
     let sdl_context = sdl2::init()?;
@@ -252,6 +273,8 @@ fn main() -> Result<(), String>
     let mut fps_text_surface: Surface;
     let mut fps_text_texture: Texture;
     let mut fps_text_rect: Rect;
+
+    let applciation_start_time: Instant = Instant::now();
 
     let mut delta_duration: Duration = Duration::new(0, 0);
     'running: loop {
@@ -294,17 +317,11 @@ fn main() -> Result<(), String>
         // Present full image
         canvas.present();
         
+
         delta_duration = frame_start_time.elapsed();
         
-        // Handle frame rate caps
-        if application.max_frame_duration > 0.0
-        {
-            if delta_duration.as_secs_f64() < application.max_frame_duration
-            {
-                let remaining_frame_time: f64 = application.max_frame_duration - delta_duration.as_secs_f64();
-                ::std::thread::sleep(Duration::from_secs_f64(remaining_frame_time));
-            }
-        }
+        let mut time = APPLICATION_TIME.lock().unwrap();
+        *time = applciation_start_time.elapsed().as_secs_f64();
     }
 
     Ok(())
