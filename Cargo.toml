@@ -5,3 +5,7 @@ edition = "2024"
 
 [dependencies]
 clap = { version = "4.5.35", features = ["derive"] }
+
+[dependencies.sdl2]
+version = "0.37.0"
+features = ["ttf"]
