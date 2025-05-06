@@ -125,7 +125,7 @@ fn get_pixel_colour(uv: &Float2, camera: &Camera, render_4d: bool) -> Float3
             
             let light_source: Float3 = r * Float3{x: 2.0, y: 2.0, z: 4.0};
 
-            let diffuse: f32 = Float3::dot(n, (light_source - p).normalized()) * 0.5 + 0.5;;
+            let diffuse: f32 = Float3::dot(n, (light_source - p).normalized()) * 0.5 + 0.5;
             colour = Float3::new(diffuse, diffuse, diffuse);
         }
     }

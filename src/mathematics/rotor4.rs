@@ -29,6 +29,8 @@ impl Rotor<Float4, Bivector4> for Rotor4
     /// Creates a new rotor in the specified bivector given an angle in radians
     fn bivector_angle(bv: &Bivector4, angle: f32) -> Rotor4
     {
+        let bv = bv.normalized();
+        
         let sina: f32 = f32::sin(angle / 2.0);
 
         return Rotor4{
