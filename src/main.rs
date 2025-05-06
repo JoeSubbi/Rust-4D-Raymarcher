@@ -1,11 +1,9 @@
 use std::path::Path;
+use std::thread;
 use std::time::{Duration, Instant};
 use std::sync::Mutex;
 
 use clap::Parser;
-
-use futures::future;
-use futures::executor::block_on;
 
 extern crate sdl2;
 use sdl2::event::Event;
@@ -185,7 +183,7 @@ struct Pixel
     pub y: u32,
 }
 
-async fn render_pixel(x: u32, y: u32, camera: &Camera, application: &Application) -> Pixel
+fn render_pixel(x: u32, y: u32, camera: &Camera, application: &Application) -> Pixel
 {
     let mut colour: Float3 = Float3::new(0.0, 0.0, 0.0);
     
@@ -224,23 +222,73 @@ async fn render_pixel(x: u32, y: u32, camera: &Camera, application: &Application
     return Pixel{colour: format_colour(colour), x: x, y: y};
 }
 
-async fn render(canvas: &mut WindowCanvas, camera: &Camera, application: &Application)
+fn render(canvas: &mut WindowCanvas, camera: &Camera, application: &Application)
 {
-    let mut pixel_futures = Vec::with_capacity((application.height * application.width) as usize);
+    thread::scope(|s| {
+        
+        /*
+        let thread_count = 8;//thread::available_parallelism().unwrap().get();
+        let mut pixel_threads = Vec::with_capacity(thread_count);
 
-    for y in 0..application.height 
-    {
-        for x in 0..application.width 
+        let pixel_count = application.width * application.height;
+        let pixels_per_chunk: u32 = u32::div_ceil(pixel_count, thread_count as u32);
+
+        for chunk in 0..thread_count
         {
-            pixel_futures.push(render_pixel(x, y, &camera, &application));
-        }
-    }
+            let next_pixel_index = chunk as u32 * pixels_per_chunk;
+            if next_pixel_index > pixel_count
+            {
+                break;
+            }
 
-    for pixel in future::join_all(pixel_futures).await
-    {
-        canvas.set_draw_color(pixel.colour);
-        canvas.draw_point(Point::new(pixel.x as i32, pixel.y as i32)).unwrap();
-    }
+            pixel_threads.push(
+                s.spawn(move || 
+                    {
+                        let mut pixel_row = Vec::with_capacity(pixels_per_chunk as usize);
+
+                        for pixel in next_pixel_index..pixel_count
+                        {
+                            let x = pixel % application.width;
+                            let y = pixel / application.width;
+                            pixel_row.push(render_pixel(x, y, &camera, &application));
+                        }
+
+                        return pixel_row;
+                    }
+                )
+            );
+        }
+        */
+        
+        let mut pixel_threads = Vec::with_capacity(application.height as usize);
+
+        for y in 0..application.height
+        {
+            pixel_threads.push(
+                s.spawn(move || 
+                    {
+                        let mut pixel_row = Vec::with_capacity(application.width as usize);
+
+                        for x in 0..application.width
+                        {
+                            pixel_row.push(render_pixel(x, y, &camera, &application));
+                        }
+
+                        return pixel_row;
+                    }
+                )
+            );
+        }
+
+        for thread_handle in pixel_threads
+        {
+            for pixel in thread_handle.join().unwrap()
+            {
+                canvas.set_draw_color(pixel.colour);
+                canvas.draw_point(Point::new(pixel.x as i32, pixel.y as i32)).unwrap();
+            }
+        }
+    });
 }
 
 #[derive(Parser, Debug)]
@@ -320,7 +368,7 @@ fn main() -> Result<(), String>
         
         // Render
         canvas.clear();
-        block_on(render(&mut canvas, &camera, &application));
+        render(&mut canvas, &camera, &application);
         
         // Render FPS Text
         fps_text = format!("{:.1}fps {:.6}s", 1.0f64 / delta_time, delta_time);
