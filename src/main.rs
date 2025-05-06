@@ -4,6 +4,9 @@ use std::sync::Mutex;
 
 use clap::Parser;
 
+use futures::future;
+use futures::executor::block_on;
+
 extern crate sdl2;
 use sdl2::event::Event;
 use sdl2::pixels::Color;
@@ -125,7 +128,7 @@ fn get_pixel_colour(uv: &Float2, camera: &Camera, render_4d: bool) -> Float3
             
             let light_source: Float3 = r * Float3{x: 2.0, y: 2.0, z: 4.0};
 
-            let diffuse: f32 = Float3::dot(n, (light_source - p).normalized()) * 0.5 + 0.5;;
+            let diffuse: f32 = Float3::dot(n, (light_source - p).normalized()) * 0.5 + 0.5;
             colour = Float3::new(diffuse, diffuse, diffuse);
         }
     }
@@ -174,53 +177,70 @@ fn format_colour(pixel_colour: Float3) -> Color
     return draw_colour;
 }
 
-fn render(canvas: &mut WindowCanvas, render_settings: &Application) -> Result<(), String>
+#[derive(Copy, Clone)]
+struct Pixel
 {
-    let camera: Camera = Camera::new(Float3::new(0.0, 0.0, 2.0), render_settings.aspect_ratio, 2.0, 1.0);
- 
-    for y in (0..render_settings.height).rev() {
-        for x in 0..render_settings.width {
-            let mut colour: Float3 = Float3::new(0.0, 0.0, 0.0);
+    pub colour: Color,
+    pub x: u32,
+    pub y: u32,
+}
 
-            if !render_settings.anti_aliasing
-            {
-                let uv: Float2 = Float2::new(
-                    x as f32 / (render_settings.width - 1) as f32,
-                    y as f32 / (render_settings.height - 1) as f32
-                );
-                colour = get_pixel_colour(&uv, &camera, render_settings.render_4d);
-            }
-            else 
-            {
-                let sample_offsets: [Float2; 9] = [
-                    Float2::new(0.5, 0.5),
-                    Float2::new(0.0, 0.5),
-                    Float2::new(-0.5, 0.5),
-                    Float2::new(0.5, 0.0),
-                    Float2::new(0.0, 0.0),
-                    Float2::new(-0.5, 0.0),
-                    Float2::new(0.5, -0.5),
-                    Float2::new(0.0, -0.5),
-                    Float2::new(-0.5, -0.5)
-                ];
-                for sample_offset in sample_offsets
-                {
-                    let uv: Float2 = Float2::new(
-                        (x as f32 + sample_offset.x) / (render_settings.width - 1) as f32,
-                        (y as f32 + sample_offset.y) / (render_settings.height - 1) as f32
-                    );
-                    colour += get_pixel_colour(&uv, &camera, render_settings.render_4d);
-                }
-                colour = colour / sample_offsets.len() as f32;
-                
-            }
-            
-            canvas.set_draw_color(format_colour(colour));
-            canvas.draw_point(Point::new(x as i32, (render_settings.height as i32) - (y as i32)))?;
+async fn render_pixel(x: u32, y: u32, camera: &Camera, application: &Application) -> Pixel
+{
+    let mut colour: Float3 = Float3::new(0.0, 0.0, 0.0);
+    
+    if !application.anti_aliasing
+    {
+        let uv: Float2 = Float2::new(
+            x as f32 / (application.width - 1) as f32,
+            y as f32 / (application.height - 1) as f32
+        );
+        colour = get_pixel_colour(&uv, &camera, application.render_4d);
+    }
+    else 
+    {
+        let sample_offsets: [Float2; 9] = [
+            Float2::new(0.5, 0.5),
+            Float2::new(0.0, 0.5),
+            Float2::new(-0.5, 0.5),
+            Float2::new(0.5, 0.0),
+            Float2::new(0.0, 0.0),
+            Float2::new(-0.5, 0.0),
+            Float2::new(0.5, -0.5),
+            Float2::new(0.0, -0.5),
+            Float2::new(-0.5, -0.5)
+        ];
+        for sample_offset in sample_offsets
+        {
+            let uv: Float2 = Float2::new(
+                (x as f32 + sample_offset.x) / (application.width - 1) as f32,
+                (y as f32 + sample_offset.y) / (application.height - 1) as f32
+            );
+            colour += get_pixel_colour(&uv, &camera, application.render_4d);
+        }
+        colour = colour / sample_offsets.len() as f32;
+    }
+
+    return Pixel{colour: format_colour(colour), x: x, y: y};
+}
+
+async fn render(canvas: &mut WindowCanvas, camera: &Camera, application: &Application)
+{
+    let mut pixel_futures = Vec::with_capacity((application.height * application.width) as usize);
+
+    for y in 0..application.height 
+    {
+        for x in 0..application.width 
+        {
+            pixel_futures.push(render_pixel(x, y, &camera, &application));
         }
     }
 
-    Ok(())
+    for pixel in future::join_all(pixel_futures).await
+    {
+        canvas.set_draw_color(pixel.colour);
+        canvas.draw_point(Point::new(pixel.x as i32, pixel.y as i32)).unwrap();
+    }
 }
 
 #[derive(Parser, Debug)]
@@ -243,7 +263,7 @@ fn main() -> Result<(), String>
     let render_4d: bool = !args.d;
 
     let application: Application = Application::new(16.0 / 9.0, 480, use_anti_aliasing, render_4d);
-
+    let camera: Camera = Camera::new(Float3::new(0.0, 0.0, 2.0), application.aspect_ratio, 2.0, 1.0);
 
     let sdl_context = sdl2::init()?;
     let video_subsystem = sdl_context.video()?;
@@ -300,7 +320,7 @@ fn main() -> Result<(), String>
         
         // Render
         canvas.clear();
-        render(&mut canvas, &application)?;
+        block_on(render(&mut canvas, &camera, &application));
         
         // Render FPS Text
         fps_text = format!("{:.1}fps {:.6}s", 1.0f64 / delta_time, delta_time);
@@ -309,9 +329,9 @@ fn main() -> Result<(), String>
         let height: u32 = fps_text_surface.height();
         fps_text_texture = texture_creator.create_texture_from_surface(fps_text_surface).unwrap();
         fps_text_rect = Rect::new(application.width as i32 - width as i32,
-                                        application.height as i32 - height as i32,
-                                        width,
-                                        height);
+                                  application.height as i32 - height as i32,
+                                  width,
+                                  height);
         canvas.copy(&fps_text_texture, None, Some(fps_text_rect))?;
         
         // Present full image
