@@ -93,19 +93,19 @@ impl Rotor<Float4, Bivector4> for Rotor4
 
     fn rotate_vector(&self, v: Float4) -> Float4
     {
-        let s: f32 = self.a;
-        let s2: f32 = s * s;
+        let a: f32 = self.a;
+        let a2: f32 = a * a;
         let bxy2: f32 = self.bv.xy * self.bv.xy;
         let bxz2: f32 = self.bv.xz * self.bv.xz;
         let bxw2: f32 = self.bv.xw * self.bv.xw;
         let byz2: f32 = self.bv.yz * self.bv.yz;
         let byw2: f32 = self.bv.yw * self.bv.yw;
         let bzw2: f32 = self.bv.zw * self.bv.zw;
-        let bxyzw2: f32 = self.p * self.p;
+        let p2: f32 = self.p * self.p;
 
         let r: Float4 = Float4{
             x: (
-                  2.0 * v.w * self.bv.xw * s
+                  2.0 * v.w * self.bv.xw * a
                 + 2.0 * v.w * self.bv.xy * self.bv.yw
                 + 2.0 * v.w * self.bv.xz * self.bv.zw
                 + 2.0 * v.w * self.bv.yz * self.p
@@ -115,25 +115,25 @@ impl Rotor<Float4, Bivector4> for Rotor4
                 + v.x * byw2
                 + v.x * byz2
                 + v.x * bzw2
-                - v.x * bxyzw2
-                + v.x * s2
+                - v.x * p2
+                + v.x * a2
                 - 2.0 * v.y * self.bv.xw * self.bv.yw
-                + 2.0 * v.y * self.bv.xy * s
+                + 2.0 * v.y * self.bv.xy * a
                 - 2.0 * v.y * self.bv.xz * self.bv.yz
                 + 2.0 * v.y * self.bv.zw * self.p
                 - 2.0 * v.z * self.bv.xw * self.bv.zw
                 + 2.0 * v.z * self.bv.xy * self.bv.yz
-                + 2.0 * v.z * self.bv.xz * s
+                + 2.0 * v.z * self.bv.xz * a
                 - 2.0 * v.z * self.bv.yw * self.p
             ),
 
             y: (
                 - 2.0 * v.w * self.bv.xw * self.bv.xy
                 - 2.0 * v.w * self.bv.xz * self.p
-                + 2.0 * v.w * self.bv.yw * s
+                + 2.0 * v.w * self.bv.yw * a
                 + 2.0 * v.w * self.bv.yz * self.bv.zw
                 - 2.0 * v.x * self.bv.xw * self.bv.yw
-                - 2.0 * v.x * self.bv.xy * s
+                - 2.0 * v.x * self.bv.xy * a
                 - 2.0 * v.x * self.bv.xz * self.bv.yz
                 - 2.0 * v.x * self.bv.zw * self.p
                 + v.y * bxw2
@@ -142,35 +142,35 @@ impl Rotor<Float4, Bivector4> for Rotor4
                 - v.y * byw2
                 - v.y * byz2
                 + v.y * bzw2
-                - v.y * bxyzw2
-                + v.y * s2
+                - v.y * p2
+                + v.y * a2
                 + 2.0 * v.z * self.bv.xw * self.p
                 - 2.0 * v.z * self.bv.xy * self.bv.xz
                 - 2.0 * v.z * self.bv.yw * self.bv.zw
-                + 2.0 * v.z * self.bv.yz * s
+                + 2.0 * v.z * self.bv.yz * a
             ),
 
             z: (
                 - 2.0 * v.w * self.bv.xw * self.bv.xz
                 + 2.0 * v.w * self.bv.xy * self.p
                 - 2.0 * v.w * self.bv.yw * self.bv.yz
-                + 2.0 * v.w * self.bv.zw * s
+                + 2.0 * v.w * self.bv.zw * a
                 - 2.0 * v.x * self.bv.xw * self.bv.zw
                 + 2.0 * v.x * self.bv.xy * self.bv.yz
-                - 2.0 * v.x * self.bv.xz * s
+                - 2.0 * v.x * self.bv.xz * a
                 + 2.0 * v.x * self.bv.yw * self.p
                 - 2.0 * v.y * self.bv.xw * self.p
                 - 2.0 * v.y * self.bv.xy * self.bv.xz
                 - 2.0 * v.y * self.bv.yw * self.bv.zw
-                - 2.0 * v.y * self.bv.yz * s
+                - 2.0 * v.y * self.bv.yz * a
                 + v.z * bxw2
                 + v.z * bxy2
                 - v.z * bxz2
                 + v.z * byw2
                 - v.z * byz2
                 - v.z * bzw2
-                - v.z * bxyzw2
-                + v.z * s2
+                - v.z * p2
+                + v.z * a2
     
             ),
 
@@ -181,20 +181,20 @@ impl Rotor<Float4, Bivector4> for Rotor4
                 - v.w * byw2
                 + v.w * byz2
                 - v.w * bzw2
-                - v.w * bxyzw2
-                + v.w * s2
-                - 2.0 * v.x * self.bv.xw * s
+                - v.w * p2
+                + v.w * a2
+                - 2.0 * v.x * self.bv.xw * a
                 + 2.0 * v.x * self.bv.xy * self.bv.yw
                 + 2.0 * v.x * self.bv.xz * self.bv.zw
                 - 2.0 * v.x * self.bv.yz * self.p
                 - 2.0 * v.y * self.bv.xw * self.bv.xy
                 + 2.0 * v.y * self.bv.xz * self.p
-                - 2.0 * v.y * self.bv.yw * s
+                - 2.0 * v.y * self.bv.yw * a
                 + 2.0 * v.y * self.bv.yz * self.bv.zw
                 - 2.0 * v.z * self.bv.xw * self.bv.xz
                 - 2.0 * v.z * self.bv.xy * self.p
                 - 2.0 * v.z * self.bv.yw * self.bv.yz
-                - 2.0 * v.z * self.bv.zw * s
+                - 2.0 * v.z * self.bv.zw * a
             )
         };
 

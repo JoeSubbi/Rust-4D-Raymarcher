@@ -1,5 +1,5 @@
 use std::path::Path;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 use std::sync::Mutex;
 
 use clap::Parser;
@@ -110,7 +110,7 @@ fn get_pixel_colour(uv: &Float2, camera: &Camera, render_4d: bool) -> Float3
 
     if !render_4d
     {
-        let a: f32 = *APPLICATION_TIME.lock().unwrap() as f32;
+        let a: f32 = APPLICATION_TIME.lock().unwrap().application_up_time as f32;
         let r: Rotor3 = Rotor3::bivector_angle(&Bivector3::new(1.0, 0.0, 0.0), a);
 
         let ro: Float3 = r * camera.position;
@@ -131,7 +131,7 @@ fn get_pixel_colour(uv: &Float2, camera: &Camera, render_4d: bool) -> Float3
     }
     else 
     {
-        let a: f32 = *APPLICATION_TIME.lock().unwrap() as f32;
+        let a: f32 = APPLICATION_TIME.lock().unwrap().application_up_time as f32;
         let r: Rotor4 = Rotor4::bivector_angle(&Bivector4::new(1.0, 1.0, 1.0, 1.0, 1.0, 1.0), a);
 
         let ro: Float4 = r * Float4::from(camera.position);
@@ -152,13 +152,6 @@ fn get_pixel_colour(uv: &Float2, camera: &Camera, render_4d: bool) -> Float3
     }
 
     return colour;
-}
-
-
-
-fn update(delta_time: f64)
-{
-
 }
 
 
@@ -234,7 +227,13 @@ struct Args {
     d: bool
 }
 
-static APPLICATION_TIME: Mutex<f64> = Mutex::new(0.0f64);
+struct Time
+{
+    pub application_up_time: f64,
+    pub frame_delta_time: f64,
+}
+
+static APPLICATION_TIME: Mutex<Time> = Mutex::new(Time{application_up_time: 0.0, frame_delta_time: 0.0});
 
 fn main() -> Result<(), String>
 {
@@ -275,8 +274,6 @@ fn main() -> Result<(), String>
     let mut fps_text_rect: Rect;
 
     let applciation_start_time: Instant = Instant::now();
-
-    let mut delta_duration: Duration = Duration::new(0, 0);
     'running: loop {
         
         let frame_start_time: Instant = Instant::now();
@@ -292,11 +289,7 @@ fn main() -> Result<(), String>
         }
         
         // Update any other logic
-        let delta_time: f64 = delta_duration.as_secs_f64();
-        if delta_time > 0.0
-        {
-            update(delta_time);
-        }
+        let delta_time: f64 = APPLICATION_TIME.lock().unwrap().frame_delta_time;
         
         // Render
         canvas.clear();
@@ -317,11 +310,10 @@ fn main() -> Result<(), String>
         // Present full image
         canvas.present();
         
-
-        delta_duration = frame_start_time.elapsed();
-        
+        // Update time
         let mut time = APPLICATION_TIME.lock().unwrap();
-        *time = applciation_start_time.elapsed().as_secs_f64();
+        time.application_up_time = applciation_start_time.elapsed().as_secs_f64();
+        time.frame_delta_time = frame_start_time.elapsed().as_secs_f64();
     }
 
     Ok(())
