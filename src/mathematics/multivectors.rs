@@ -32,7 +32,8 @@ pub trait Vector:
 }
 
 pub trait Bivector: 
-    Copy
+    Copy +
+    Magnitude
 {
 
 }

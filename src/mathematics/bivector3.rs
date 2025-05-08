@@ -2,7 +2,7 @@ use std::cmp::PartialEq;
 use std::ops::Neg;
 
 use super::approx_equal;
-use super::multivectors::Bivector;
+use super::multivectors::{Bivector, Magnitude};
 
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Bivector3
@@ -21,6 +21,42 @@ impl Bivector3
 }
 
 impl Bivector for Bivector3 {}
+
+impl Magnitude for Bivector3
+{
+    fn length_squared(&self) -> f32
+    {
+        return self.yz * self.yz + self.xz * self.xz + self.xy * self.xy;
+    }
+
+    fn normalize(&mut self)
+    {
+        let length : f32 = self.length();
+        if length > 0.0
+        {
+            self.yz /= length;
+            self.xz /= length;
+            self.xy /= length;
+        }
+    }
+
+    fn normalized(&self) -> Bivector3
+    {
+        let length : f32 = self.length();
+        if length > 0.0
+        {
+            return Bivector3 { 
+                yz: self.yz / length, 
+                xz: self.xz / length, 
+                xy: self.xy / length
+            };
+        }
+        else 
+        {
+            return *self;
+        }
+    }
+}
 
 impl Neg for Bivector3 {
     type Output = Bivector3;
