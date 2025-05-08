@@ -219,39 +219,8 @@ fn render(canvas: &mut WindowCanvas, camera: &Camera, application: &Application)
 {
     thread::scope(|s| {
         
-        /*
-        let thread_count = 8;//thread::available_parallelism().unwrap().get();
-        let mut pixel_threads = Vec::with_capacity(thread_count);
-
-        let pixel_count = application.width * application.height;
-        let pixels_per_chunk: u32 = u32::div_ceil(pixel_count, thread_count as u32);
-
-        for chunk in 0..thread_count
-        {
-            let next_pixel_index = chunk as u32 * pixels_per_chunk;
-            if next_pixel_index > pixel_count
-            {
-                break;
-            }
-
-            pixel_threads.push(
-                s.spawn(move || 
-                    {
-                        let mut pixel_row = Vec::with_capacity(pixels_per_chunk as usize);
-
-                        for pixel in next_pixel_index..pixel_count
-                        {
-                            let x = pixel % application.width;
-                            let y = pixel / application.width;
-                            pixel_row.push(render_pixel(x, y, &camera, &application));
-                        }
-
-                        return pixel_row;
-                    }
-                )
-            );
-        }
-        */
+        // Render using a new thread for each row of the image
+        // A thread for each pixel was had drastically more overhead. A single thread per core using thread::available_parallelism() was not enough
         
         let mut pixel_threads = Vec::with_capacity(application.height as usize);
 
