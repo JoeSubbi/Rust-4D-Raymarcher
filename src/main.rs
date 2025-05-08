@@ -1,4 +1,5 @@
 use std::path::Path;
+use std::thread;
 use std::time::Instant;
 use std::sync::Mutex;
 
@@ -167,53 +168,120 @@ fn format_colour(pixel_colour: Float3) -> Color
     return draw_colour;
 }
 
-fn render(canvas: &mut WindowCanvas, render_settings: &Application) -> Result<(), String>
+#[derive(Copy, Clone)]
+struct Pixel
 {
-    let camera: Camera = Camera::new(Float3::new(0.0, 0.0, 2.0), render_settings.aspect_ratio, 2.0, 1.0);
- 
-    for y in (0..render_settings.height).rev() {
-        for x in 0..render_settings.width {
-            let mut colour: Float3 = Float3::new(0.0, 0.0, 0.0);
+    pub colour: Color,
+    pub x: u32,
+    pub y: u32,
+}
 
-            if !render_settings.anti_aliasing
-            {
-                let uv: Float2 = Float2::new(
-                    x as f32 / (render_settings.width - 1) as f32,
-                    y as f32 / (render_settings.height - 1) as f32
-                );
-                colour = get_pixel_colour(&uv, &camera, render_settings.render_4d);
-            }
-            else 
-            {
-                let sample_offsets: [Float2; 9] = [
-                    Float2::new(0.5, 0.5),
-                    Float2::new(0.0, 0.5),
-                    Float2::new(-0.5, 0.5),
-                    Float2::new(0.5, 0.0),
-                    Float2::new(0.0, 0.0),
-                    Float2::new(-0.5, 0.0),
-                    Float2::new(0.5, -0.5),
-                    Float2::new(0.0, -0.5),
-                    Float2::new(-0.5, -0.5)
-                ];
-                for sample_offset in sample_offsets
-                {
-                    let uv: Float2 = Float2::new(
-                        (x as f32 + sample_offset.x) / (render_settings.width - 1) as f32,
-                        (y as f32 + sample_offset.y) / (render_settings.height - 1) as f32
-                    );
-                    colour += get_pixel_colour(&uv, &camera, render_settings.render_4d);
-                }
-                colour = colour / sample_offsets.len() as f32;
-                
-            }
-            
-            canvas.set_draw_color(format_colour(colour));
-            canvas.draw_point(Point::new(x as i32, (render_settings.height as i32) - (y as i32)))?;
+fn render_pixel(x: u32, y: u32, camera: &Camera, application: &Application) -> Pixel
+{
+    let mut colour: Float3 = Float3::new(0.0, 0.0, 0.0);
+    
+    if !application.anti_aliasing
+    {
+        let uv: Float2 = Float2::new(
+            x as f32 / (application.width - 1) as f32,
+            y as f32 / (application.height - 1) as f32
+        );
+        colour = get_pixel_colour(&uv, &camera, application.render_4d);
+    }
+    else 
+    {
+        let sample_offsets: [Float2; 9] = [
+            Float2::new(0.5, 0.5),
+            Float2::new(0.0, 0.5),
+            Float2::new(-0.5, 0.5),
+            Float2::new(0.5, 0.0),
+            Float2::new(0.0, 0.0),
+            Float2::new(-0.5, 0.0),
+            Float2::new(0.5, -0.5),
+            Float2::new(0.0, -0.5),
+            Float2::new(-0.5, -0.5)
+        ];
+        for sample_offset in sample_offsets
+        {
+            let uv: Float2 = Float2::new(
+                (x as f32 + sample_offset.x) / (application.width - 1) as f32,
+                (y as f32 + sample_offset.y) / (application.height - 1) as f32
+            );
+            colour += get_pixel_colour(&uv, &camera, application.render_4d);
         }
+        colour = colour / sample_offsets.len() as f32;
     }
 
-    Ok(())
+    return Pixel{colour: format_colour(colour), x: x, y: y};
+}
+
+fn render(canvas: &mut WindowCanvas, camera: &Camera, application: &Application)
+{
+    thread::scope(|s| {
+        
+        /*
+        let thread_count = 8;//thread::available_parallelism().unwrap().get();
+        let mut pixel_threads = Vec::with_capacity(thread_count);
+
+        let pixel_count = application.width * application.height;
+        let pixels_per_chunk: u32 = u32::div_ceil(pixel_count, thread_count as u32);
+
+        for chunk in 0..thread_count
+        {
+            let next_pixel_index = chunk as u32 * pixels_per_chunk;
+            if next_pixel_index > pixel_count
+            {
+                break;
+            }
+
+            pixel_threads.push(
+                s.spawn(move || 
+                    {
+                        let mut pixel_row = Vec::with_capacity(pixels_per_chunk as usize);
+
+                        for pixel in next_pixel_index..pixel_count
+                        {
+                            let x = pixel % application.width;
+                            let y = pixel / application.width;
+                            pixel_row.push(render_pixel(x, y, &camera, &application));
+                        }
+
+                        return pixel_row;
+                    }
+                )
+            );
+        }
+        */
+        
+        let mut pixel_threads = Vec::with_capacity(application.height as usize);
+
+        for y in 0..application.height
+        {
+            pixel_threads.push(
+                s.spawn(move || 
+                    {
+                        let mut pixel_row = Vec::with_capacity(application.width as usize);
+
+                        for x in 0..application.width
+                        {
+                            pixel_row.push(render_pixel(x, y, &camera, &application));
+                        }
+
+                        return pixel_row;
+                    }
+                )
+            );
+        }
+
+        for thread_handle in pixel_threads
+        {
+            for pixel in thread_handle.join().unwrap()
+            {
+                canvas.set_draw_color(pixel.colour);
+                canvas.draw_point(Point::new(pixel.x as i32, pixel.y as i32)).unwrap();
+            }
+        }
+    });
 }
 
 #[derive(Parser, Debug)]
@@ -242,7 +310,7 @@ fn main() -> Result<(), String>
     let render_4d: bool = !args.d;
 
     let application: Application = Application::new(16.0 / 9.0, 480, use_anti_aliasing, render_4d);
-
+    let camera: Camera = Camera::new(Float3::new(0.0, 0.0, 2.0), application.aspect_ratio, 2.0, 1.0);
 
     let sdl_context = sdl2::init()?;
     let video_subsystem = sdl_context.video()?;
@@ -293,7 +361,7 @@ fn main() -> Result<(), String>
         
         // Render
         canvas.clear();
-        render(&mut canvas, &application)?;
+        render(&mut canvas, &camera, &application);
         
         // Render FPS Text
         fps_text = format!("{:.1}fps {:.6}s", 1.0f64 / delta_time, delta_time);
@@ -302,9 +370,9 @@ fn main() -> Result<(), String>
         let height: u32 = fps_text_surface.height();
         fps_text_texture = texture_creator.create_texture_from_surface(fps_text_surface).unwrap();
         fps_text_rect = Rect::new(application.width as i32 - width as i32,
-                                        application.height as i32 - height as i32,
-                                        width,
-                                        height);
+                                  application.height as i32 - height as i32,
+                                  width,
+                                  height);
         canvas.copy(&fps_text_texture, None, Some(fps_text_rect))?;
         
         // Present full image
