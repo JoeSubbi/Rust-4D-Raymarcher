@@ -25,7 +25,6 @@ impl Rotor3
 
 impl Rotor<Float3, Bivector3> for Rotor3
 {
-    /// Creates a new rotor in the specified bivector given an angle in radians
     fn bivector_angle(bv: &Bivector3, angle: f32) -> Rotor3
     {
         let bv = bv.normalized();
@@ -173,23 +172,9 @@ impl Rotor<Float3, Bivector3> for Rotor3
         return to_return;
     }
 
-    /// Gives the angle of this Rotor in Radians
     fn angle(&self) -> f32
     {
         return f32::acos(self.a) * 2.0;
-    }
-
-    fn from_to(a: &Rotor3, b: &Rotor3) -> Rotor3
-    {
-        let difference: Rotor3 = *b * Rotor3::reverse(a);
-        difference.normalized();
-        return difference;
-    }
-    
-    fn approx_equal(a: &Rotor3, b: &Rotor3) -> bool
-    {
-        let angle: f32 = Rotor3::from_to(a, b).angle();
-        return angle < 0.001;
     }
 }
 

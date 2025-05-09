@@ -26,7 +26,8 @@ impl Rotor4
 
 impl Rotor<Float4, Bivector4> for Rotor4
 {
-    /// Creates a new rotor in the specified bivector given an angle in radians
+    /// Creates a new Rotor in the specified bivector given an angle in radians
+    /// Warning: this function is totally correct. Angles > PI/2.0 won't produce correct Rotors because the pseudoscalar p is not initialized
     fn bivector_angle(bv: &Bivector4, angle: f32) -> Rotor4
     {
         let bv = bv.normalized();
@@ -257,7 +258,6 @@ impl Rotor<Float4, Bivector4> for Rotor4
         return to_return;
     }
     
-    /// Gives the angle of this Rotor in Radians
     fn angle(&self) -> f32
     {
         return f32::acos(f32::sqrt(self.a * self.a + self.p * self.p) ) * 2.0;

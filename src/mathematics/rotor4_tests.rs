@@ -15,6 +15,21 @@ fn rotate_vector(v: &mut Float4, e1: Float4, e2: Float4, angle: f32)
 }
 
 #[test]
+fn geometric_product()
+{
+    // Rotors have double coverage, so the rotation will actually be twice the rotation from e1 to e2
+    let e1: Float4 = Float4::new(1.0, 0.0, 0.0, 0.0);
+    let e2: Float4 = Float4::new(1.0, 1.0, 0.0, 0.0).normalized();
+
+    let geo_prod: Rotor4 = Rotor::geometric_product(e2, e1);
+
+    let v: Float4 = e1;
+    let expected: Float4 = Float4::new(0.0, 1.0, 0.0, 0.0);
+
+    assert_eq!(geo_prod * v, expected);
+}
+
+#[test]
 fn single_planar_rotations()
 {
     let mut v: Float4;

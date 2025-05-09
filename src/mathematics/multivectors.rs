@@ -46,24 +46,29 @@ pub trait Rotor<V: Vector, B: Bivector>:
     std::ops::Mul<Output = Self> +
     std::ops::MulAssign
 {
-    /// Creates a new rotor in the specified bivector given an angle in radians
+    /// Creates a new Rotor in the specified bivector given an angle in radians
     fn bivector_angle(bv: &B, angle: f32) -> Self;
 
+    /// Creates a Rotor that is double the rotation from Vector v to Vector u
     fn geometric_product(u: V, v: V) -> Self;
 
+    /// Return a copy of the reverse of this Rotor
     fn reverse(r: &Self) -> Self;
 
+    /// Reverse this Rotor
     fn reverse_me(&mut self);
 
     fn rotate_rotor(a: &Self, b: &Self) -> Self;
 
     fn rotate_vector(&self, v: V) -> V;
 
+    /// Spherical Linear Interpolation from a Rotor to another
     fn slerp(from: &Self, to: &Self, ratio: f32) -> Self;
 
     /// Gives the angle of this Rotor in Radians
     fn angle(&self) -> f32;
 
+    /// Returns the Rotor representing the rotation from Rotor a to Rotor b
     fn from_to(a: &Self, b: &Self) -> Self
     {
         let difference: Self = *b * Self::reverse(a);
@@ -71,6 +76,7 @@ pub trait Rotor<V: Vector, B: Bivector>:
         return difference;
     }
 
+    /// Check if the the angle between Rotor a and Rotor b is < 0.001 radians or 0.057 degrees
     fn approx_equal(a: &Self, b: &Self) -> bool
     {
         let angle: f32 = Self::from_to(a, b).angle();

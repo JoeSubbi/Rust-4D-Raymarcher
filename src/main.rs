@@ -33,6 +33,7 @@ use mathematics::multivectors::{Magnitude, Rotor, Vector};
 use mathematics::rotor3::Rotor3;
 use mathematics::rotor4::Rotor4;
 
+mod raymarching;
 
 fn get_dist3(p: Float3) -> f32
 {
@@ -46,62 +47,6 @@ fn get_dist4(p: Float4) -> f32
     return sdf_box4(p, Float4::new(0.0,0.0,0.0, 0.0), Float4::new(1.0,1.0,1.0, 1.0), 0.01)
 }
 
-const MAX_DIST: f32 = 100.0;
-const MAX_STEPS: i32 = 100;
-const SURF_DIST: f32 = 0.001;
-
-fn raymarch<T: Vector>(ro: &T, rd: &T, distance_function: fn(T) -> f32) -> f32
-{
-    let mut d_origin: f32 = 0.0; // Distance from Origin
-
-    for _i in 0..MAX_STEPS
-    {
-        let p: T = *ro + (*rd * d_origin);
-        let d_surface: f32  = distance_function(p);
-        d_origin += d_surface;
-        if d_surface < SURF_DIST || d_origin > MAX_DIST
-        {
-            break;
-        }
-    }
-
-    return d_origin;
-}
-
-fn normal3(p: Float3) -> Float3
-{
-    const E: f32 = 0.01;
-    let n: Float3 = get_dist3(p) - Float3::new(
-        get_dist3(p - Float3::new(E, 0.0, 0.0)),
-        get_dist3(p - Float3::new(0.0, E, 0.0)),
-        get_dist3(p - Float3::new(0.0, 0.0, E))
-    );
-    
-    if n.length_squared() == 0.0
-    {
-        return n;
-    }
-
-    return n.normalized();
-}
-
-fn normal4(p: Float4) -> Float4
-{
-    const E: f32 = 0.01;
-    let n: Float4 = get_dist4(p) - Float4::new(
-        get_dist4(p - Float4::new(E, 0.0, 0.0, 0.0)),
-        get_dist4(p - Float4::new(0.0, E, 0.0, 0.0)),
-        get_dist4(p - Float4::new(0.0, 0.0, E, 0.0)),
-        get_dist4(p - Float4::new(0.0, 0.0, 0.0, E))
-    );
-    
-    if n.length_squared() == 0.0
-    {
-        return n;
-    }
-
-    return n.normalized();
-}
 
 fn get_pixel_colour(uv: &Float2, scene: &Scene) -> Float3
 {
@@ -114,12 +59,12 @@ fn get_pixel_colour(uv: &Float2, scene: &Scene) -> Float3
         let ro: Float3 = scene_3d.camera.get_camera_position();
         let rd: Float3 = scene_3d.camera.get_ray_direction(*uv);
 
-        let distance: f32 = raymarch(&ro, &rd, get_dist3);  
+        let distance: f32 = raymarching::raymarch(&ro, &rd, get_dist3);  
     
-        if distance <= MAX_DIST
+        if distance <= raymarching::MAX_DIST
         {
             let p: Float3 = ro + (distance * rd);
-            let n: Float3 = normal3(p);
+            let n: Float3 = raymarching::normal3(p, get_dist3);
             
             let diffuse: f32 = Float3::dot(n, (scene_3d.light_source - p).normalized()) * 0.5 + 0.5;
             colour = Float3::new(diffuse, diffuse, diffuse);
@@ -131,12 +76,12 @@ fn get_pixel_colour(uv: &Float2, scene: &Scene) -> Float3
         let ro: Float4 = scene_4d.camera.get_camera_position();
         let rd: Float4 = scene_4d.camera.get_ray_direction(*uv);
 
-        let distance: f32 = raymarch(&ro, &rd, get_dist4);  
+        let distance: f32 = raymarching::raymarch(&ro, &rd, get_dist4);  
     
-        if distance <= MAX_DIST
+        if distance <= raymarching::MAX_DIST
         {
             let p: Float4 = ro + (distance * rd);
-            let n: Float4 = normal4(p);
+            let n: Float4 = raymarching::normal4(p, get_dist4);
             
             let diffuse: f32 = Float4::dot(n, (scene_4d.light_source - p).normalized()) * 0.5 + 0.5;
             colour = Float3::new(diffuse, diffuse, diffuse);
@@ -205,7 +150,7 @@ fn render_pixel(x: u32, y: u32, scene: &Scene, application: &Application) -> Pix
     return Pixel{colour: format_colour(colour), x: x, y: y};
 }
 
-fn render(canvas: &mut WindowCanvas, scene: &Scene, application: &Application)
+fn render(canvas: &mut WindowCanvas, scene: &Scene, application: &Application) -> Result<(), String>
 {
     thread::scope(|s| {
         
@@ -237,19 +182,21 @@ fn render(canvas: &mut WindowCanvas, scene: &Scene, application: &Application)
             for pixel in thread_handle.join().unwrap()
             {
                 canvas.set_draw_color(pixel.colour);
-                canvas.draw_point(Point::new(pixel.x as i32, pixel.y as i32)).unwrap();
+                canvas.draw_point(Point::new(pixel.x as i32, pixel.y as i32)).expect("Unable to draw point to canvas");
             }
         }
     });
+
+    Ok(())
 }
 
-fn update(delta_time: f64, scene: &mut Scene)
+fn update(delta_time: f64, scene: &mut Scene) -> Result<(), String>
 {
     if scene.is4d
     {
         let r: Rotor4 = Rotor4::bivector_angle(&Bivector4::new(1.0, 1.0, 1.0, 1.0, 1.0, 1.0), delta_time as f32);
 
-        let scene_4d: &mut Box<SubScene4> = scene.scene_4d.as_mut().expect("Unable to access 4D scene when 4D scene is specified"); 
+        let scene_4d: &mut Box<SubScene4> = scene.scene_4d.as_mut().expect("Error: scene_4d not set scene.is4d is true"); 
         scene_4d.camera.rotate_camera(r);
         scene_4d.light_source = r * scene_4d.light_source;
     }
@@ -257,10 +204,12 @@ fn update(delta_time: f64, scene: &mut Scene)
     {
         let r: Rotor3 = Rotor3::bivector_angle(&Bivector3::new(1.0, 1.0, 1.0), delta_time as f32);
 
-        let scene_3d: &mut Box<SubScene3> = scene.scene_3d.as_mut().expect("Trying to render unassigned scene"); 
+        let scene_3d: &mut Box<SubScene3> = scene.scene_3d.as_mut().expect("Error: scene_3d not set scene.is4d is false"); 
         scene_3d.camera.rotate_camera(r);
         scene_3d.light_source = r * scene_3d.light_source;
     }
+
+    Ok(())
 }
 
 #[derive(Parser, Debug)]
@@ -309,37 +258,45 @@ fn main() -> Result<(), String>
 
     let application: Application = Application::new(16.0 / 9.0, 480, use_anti_aliasing);
 
+    // Set up Camera and other Scene components
+    let z_offset: f32 = 4.0;
+    let vfov: f32 = 70.0;
+    let focal_length: f32 = 1.0;
+
     let mut scene = Scene{
         is4d: render_4d,
         scene_3d: if !render_4d {
             Some(Box::new(SubScene3 
                 { 
-                    camera: Camera3::new(Float3::new(0.0, 0.0, 0.0), Float3::new(0.0, 0.0, 4.0), Rotor3::IDENTITY, application.aspect_ratio, 60.0, 1.0), 
+                    camera: Camera3::new(Float3::new(0.0, 0.0, 0.0), Float3::new(0.0, 0.0, z_offset), Rotor3::IDENTITY, application.aspect_ratio, vfov, focal_length), 
                     light_source: Float3::new(2.0, 2.0, 4.0)
                 }))
         } else { None },
         scene_4d: if render_4d {
             Some(Box::new(SubScene4 
                 { 
-                    camera: Camera4::new(Float4::new(0.0, 0.0, 0.0, 0.0), Float4::new(0.0, 0.0, 4.0, 0.0), Rotor4::IDENTITY, application.aspect_ratio, 60.0, 1.0), 
+                    camera: Camera4::new(Float4::new(0.0, 0.0, 0.0, 0.0), Float4::new(0.0, 0.0, z_offset, 0.0), Rotor4::IDENTITY, application.aspect_ratio, vfov, focal_length), 
                     light_source: Float4::new(2.0, 2.0, 4.0, 0.0)
                 }))
         } else { None },
     };
 
-    let sdl_context = sdl2::init()?;
-    let video_subsystem = sdl_context.video()?;
-
     // Create Window
+    let sdl_context = sdl2::init().unwrap();
+    let video_subsystem = sdl_context.video().unwrap();
+
     let mut window = video_subsystem.window("4D Raymarching", application.width, application.height)
         .position_centered()
         .build()
         .unwrap();
 
     window.set_resizable(false);
-    let window_icon = Surface::from_file("assets/ClientIcon.ico").unwrap();
-    window.set_icon(window_icon);
 
+    match Surface::from_file("assets/ClientIcon.ico")
+    {
+        Err(msg) => { print!("Error: Unable to create Surface from specified file. {}", msg) }
+        Ok(window_icon) => { window.set_icon(window_icon) }
+    }
 
     let mut canvas = window.into_canvas().build().unwrap();
     let texture_creator = canvas.texture_creator();
@@ -347,7 +304,7 @@ fn main() -> Result<(), String>
     // Prepare Fonts
     let ttf_context = sdl2::ttf::init().unwrap();
     let font_path: &Path = Path::new(&"assets/CascadiaCode.ttf");
-    let font: Font = ttf_context.load_font(font_path, 12).unwrap();
+    let font: Font = ttf_context.load_font(font_path, 12)?;
 
     let mut event_pump = sdl_context.event_pump()?;
     
@@ -373,11 +330,11 @@ fn main() -> Result<(), String>
         
         // Update any other logic
         let delta_time: f64 = APPLICATION_TIME.lock().unwrap().frame_delta_time;
-        update(delta_time, &mut scene);
+        update(delta_time, &mut scene)?;
         
         // Render
         canvas.clear();
-        render(&mut canvas, &scene, &application);
+        render(&mut canvas, &scene, &application)?;
         
         // Render FPS Text
         fps_text = format!("{:.1}fps {:.6}s", 1.0f64 / delta_time, delta_time);
