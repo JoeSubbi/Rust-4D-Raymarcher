@@ -18,10 +18,10 @@ mod application;
 use application::Application;
 
 mod camera;
-use camera::Camera;
+use camera::*;
 
 mod distance_functions;
-use distance_functions::{sdf_box3, sdf_box4, sdf_sphere};
+use distance_functions::*;
 
 mod mathematics;
 use mathematics::bivector3::Bivector3;
@@ -29,21 +29,21 @@ use mathematics::bivector4::Bivector4;
 use mathematics::float2::Float2;
 use mathematics::float3::Float3;
 use mathematics::float4::Float4;
-use mathematics::multivectors::{Magnitude, Vector, Rotor};
+use mathematics::multivectors::{Magnitude, Rotor, Vector};
 use mathematics::rotor3::Rotor3;
 use mathematics::rotor4::Rotor4;
 
 
 fn get_dist3(p: Float3) -> f32
 {
-    //return sdf_sphere::<Float3>(p, Float3::new(0.0,0.0,0.0), 1.0);
-    return sdf_box3(p, Float3::new(0.0,0.0,0.0), Float3::new(0.5,0.5,0.5))
+    //return sdf_sphere::<Float3>(p, Float3::new(0.0,0.0,0.0), 1.5);
+    return sdf_box3(p, Float3::new(0.0,0.0,0.0), Float3::new(1.0,1.0,1.0), 0.01)
 }
 
 fn get_dist4(p: Float4) -> f32
 {
-    //return sdf_sphere::<Float4>(p, Float4::new(0.0,0.0,0.0, 0.0), 1.0);
-    return sdf_box4(p, Float4::new(0.0,0.0,0.0, 0.0), Float4::new(0.5,0.5,0.5, 0.5))
+    //return sdf_sphere::<Float4>(p, Float4::new(0.0,0.0,0.0, 0.0), 1.5);
+    return sdf_box4(p, Float4::new(0.0,0.0,0.0, 0.0), Float4::new(1.0,1.0,1.0, 1.0), 0.01)
 }
 
 const MAX_DIST: f32 = 100.0;
@@ -103,19 +103,16 @@ fn normal4(p: Float4) -> Float4
     return n.normalized();
 }
 
-fn get_pixel_colour(uv: &Float2, camera: &Camera, render_4d: bool) -> Float3
+fn get_pixel_colour(uv: &Float2, scene: &Scene) -> Float3
 {
     let mut colour: Float3 = Float3::new(0.0, 0.0, 0.0);
 
-    let direction: Float3 = camera.get_ray_direction(*uv);
 
-    if !render_4d
+    if !scene.is4d
     {
-        let a: f32 = APPLICATION_TIME.lock().unwrap().application_up_time as f32;
-        let r: Rotor3 = Rotor3::bivector_angle(&Bivector3::new(1.0, 0.0, 0.0), a);
-
-        let ro: Float3 = r * camera.position;
-        let rd: Float3 = r * direction;
+        let scene_3d: &SubScene3 = scene.scene_3d.as_ref().expect("Trying to render unassigned scene"); 
+        let ro: Float3 = scene_3d.camera.get_camera_position();
+        let rd: Float3 = scene_3d.camera.get_ray_direction(*uv);
 
         let distance: f32 = raymarch(&ro, &rd, get_dist3);  
     
@@ -124,19 +121,15 @@ fn get_pixel_colour(uv: &Float2, camera: &Camera, render_4d: bool) -> Float3
             let p: Float3 = ro + (distance * rd);
             let n: Float3 = normal3(p);
             
-            let light_source: Float3 = r * Float3{x: 2.0, y: 2.0, z: 4.0};
-
-            let diffuse: f32 = Float3::dot(n, (light_source - p).normalized()) * 0.5 + 0.5;
+            let diffuse: f32 = Float3::dot(n, (scene_3d.light_source - p).normalized()) * 0.5 + 0.5;
             colour = Float3::new(diffuse, diffuse, diffuse);
         }
     }
     else 
     {
-        let a: f32 = APPLICATION_TIME.lock().unwrap().application_up_time as f32;
-        let r: Rotor4 = Rotor4::bivector_angle(&Bivector4::new(1.0, 1.0, 1.0, 1.0, 1.0, 1.0), a);
-
-        let ro: Float4 = r * Float4::from(camera.position);
-        let rd: Float4 = r * Float4::from(direction);
+        let scene_4d: &SubScene4 = scene.scene_4d.as_ref().expect("Trying to render unassigned scene"); 
+        let ro: Float4 = scene_4d.camera.get_camera_position();
+        let rd: Float4 = scene_4d.camera.get_ray_direction(*uv);
 
         let distance: f32 = raymarch(&ro, &rd, get_dist4);  
     
@@ -145,16 +138,13 @@ fn get_pixel_colour(uv: &Float2, camera: &Camera, render_4d: bool) -> Float3
             let p: Float4 = ro + (distance * rd);
             let n: Float4 = normal4(p);
             
-            let light_source: Float4 = r * Float4{x: 2.0, y: 2.0, z: 4.0, w: 0.0};
-
-            let diffuse: f32 = Float4::dot(n, (light_source - p).normalized()) * 0.5 + 0.5;
+            let diffuse: f32 = Float4::dot(n, (scene_4d.light_source - p).normalized()) * 0.5 + 0.5;
             colour = Float3::new(diffuse, diffuse, diffuse);
         }
     }
 
     return colour;
 }
-
 
 fn format_colour(pixel_colour: Float3) -> Color
 {
@@ -176,7 +166,7 @@ struct Pixel
     pub y: u32,
 }
 
-fn render_pixel(x: u32, y: u32, camera: &Camera, application: &Application) -> Pixel
+fn render_pixel(x: u32, y: u32, scene: &Scene, application: &Application) -> Pixel
 {
     let mut colour: Float3 = Float3::new(0.0, 0.0, 0.0);
     
@@ -186,7 +176,7 @@ fn render_pixel(x: u32, y: u32, camera: &Camera, application: &Application) -> P
             x as f32 / (application.width - 1) as f32,
             y as f32 / (application.height - 1) as f32
         );
-        colour = get_pixel_colour(&uv, &camera, application.render_4d);
+        colour = get_pixel_colour(&uv, &scene);
     }
     else 
     {
@@ -207,7 +197,7 @@ fn render_pixel(x: u32, y: u32, camera: &Camera, application: &Application) -> P
                 (x as f32 + sample_offset.x) / (application.width - 1) as f32,
                 (y as f32 + sample_offset.y) / (application.height - 1) as f32
             );
-            colour += get_pixel_colour(&uv, &camera, application.render_4d);
+            colour += get_pixel_colour(&uv, &scene);
         }
         colour = colour / sample_offsets.len() as f32;
     }
@@ -215,7 +205,7 @@ fn render_pixel(x: u32, y: u32, camera: &Camera, application: &Application) -> P
     return Pixel{colour: format_colour(colour), x: x, y: y};
 }
 
-fn render(canvas: &mut WindowCanvas, camera: &Camera, application: &Application)
+fn render(canvas: &mut WindowCanvas, scene: &Scene, application: &Application)
 {
     thread::scope(|s| {
         
@@ -233,7 +223,7 @@ fn render(canvas: &mut WindowCanvas, camera: &Camera, application: &Application)
 
                         for x in 0..application.width
                         {
-                            pixel_row.push(render_pixel(x, y, &camera, &application));
+                            pixel_row.push(render_pixel(x, y, &scene, &application));
                         }
 
                         return pixel_row;
@@ -251,6 +241,26 @@ fn render(canvas: &mut WindowCanvas, camera: &Camera, application: &Application)
             }
         }
     });
+}
+
+fn update(delta_time: f64, scene: &mut Scene)
+{
+    if scene.is4d
+    {
+        let r: Rotor4 = Rotor4::bivector_angle(&Bivector4::new(1.0, 1.0, 1.0, 1.0, 1.0, 1.0), delta_time as f32);
+
+        let scene_4d: &mut Box<SubScene4> = scene.scene_4d.as_mut().expect("Unable to access 4D scene when 4D scene is specified"); 
+        scene_4d.camera.rotate_camera(r);
+        scene_4d.light_source = r * scene_4d.light_source;
+    }
+    else 
+    {
+        let r: Rotor3 = Rotor3::bivector_angle(&Bivector3::new(1.0, 1.0, 1.0), delta_time as f32);
+
+        let scene_3d: &mut Box<SubScene3> = scene.scene_3d.as_mut().expect("Trying to render unassigned scene"); 
+        scene_3d.camera.rotate_camera(r);
+        scene_3d.light_source = r * scene_3d.light_source;
+    }
 }
 
 #[derive(Parser, Debug)]
@@ -272,14 +282,50 @@ struct Time
 
 static APPLICATION_TIME: Mutex<Time> = Mutex::new(Time{application_up_time: 0.0, frame_delta_time: 0.0});
 
+struct Scene
+{
+    pub is4d: bool,
+    pub scene_3d: Option<Box<SubScene3>>,
+    pub scene_4d: Option<Box<SubScene4>>,
+}
+
+struct SubScene3
+{
+    pub camera: Camera3,
+    pub light_source: Float3,
+}
+
+struct SubScene4
+{
+    pub camera: Camera4,
+    pub light_source: Float4,
+}
+
 fn main() -> Result<(), String>
 {
     let args: Args = Args::parse();
     let use_anti_aliasing: bool = args.aa;
     let render_4d: bool = !args.d;
 
-    let application: Application = Application::new(16.0 / 9.0, 480, use_anti_aliasing, render_4d);
-    let camera: Camera = Camera::new(Float3::new(0.0, 0.0, 2.0), application.aspect_ratio, 2.0, 1.0);
+    let application: Application = Application::new(16.0 / 9.0, 480, use_anti_aliasing);
+
+    let mut scene = Scene{
+        is4d: render_4d,
+        scene_3d: if !render_4d {
+            Some(Box::new(SubScene3 
+                { 
+                    camera: Camera3::new(Float3::new(0.0, 0.0, 0.0), Float3::new(0.0, 0.0, 4.0), Rotor3::IDENTITY, application.aspect_ratio, 60.0, 1.0), 
+                    light_source: Float3::new(2.0, 2.0, 4.0)
+                }))
+        } else { None },
+        scene_4d: if render_4d {
+            Some(Box::new(SubScene4 
+                { 
+                    camera: Camera4::new(Float4::new(0.0, 0.0, 0.0, 0.0), Float4::new(0.0, 0.0, 4.0, 0.0), Rotor4::IDENTITY, application.aspect_ratio, 60.0, 1.0), 
+                    light_source: Float4::new(2.0, 2.0, 4.0, 0.0)
+                }))
+        } else { None },
+    };
 
     let sdl_context = sdl2::init()?;
     let video_subsystem = sdl_context.video()?;
@@ -327,10 +373,11 @@ fn main() -> Result<(), String>
         
         // Update any other logic
         let delta_time: f64 = APPLICATION_TIME.lock().unwrap().frame_delta_time;
+        update(delta_time, &mut scene);
         
         // Render
         canvas.clear();
-        render(&mut canvas, &camera, &application);
+        render(&mut canvas, &scene, &application);
         
         // Render FPS Text
         fps_text = format!("{:.1}fps {:.6}s", 1.0f64 / delta_time, delta_time);

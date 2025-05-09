@@ -6,6 +6,11 @@ As this project was created with the intention of learning rust, all code is for
 
 This project, like 4D Games, used Raymarching to render 4D shapes, and used Rotors of Geometric Algebra to manipulate these shapes without gimbal lock.
 
+## Command Line Arguments
+
+ - `--aa` Anti Aliasing. Performance intensive, but less pixilated renders.
+ - `--d` Render a 3D scene instead.
+
 ## Resources
 
  - [Rust by Example](https://doc.rust-lang.org/rust-by-example/index.html)  
@@ -28,6 +33,3 @@ sudo apt-get install libsdl2-image-dev
 ```
 
 For more information or installation for other operating systems take a look at the [Rust-SDL2 Github](https://github.com/Rust-SDL2/rust-sdl2)
-
-## TODO:
- - Multithreaded rendering for faster rendering and to learn about rust multithreading

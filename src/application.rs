@@ -5,19 +5,17 @@ pub struct Application
     pub height: u32,
 
     pub anti_aliasing: bool,
-    pub render_4d: bool,
 }
 
 impl Application
 {
-    pub fn new(aspect_ratio: f32, window_width: u32, anti_aliasing: bool, render_4d: bool) -> Application
+    pub fn new(aspect_ratio: f32, window_width: u32, anti_aliasing: bool) -> Application
     {
         return Application{
             aspect_ratio: aspect_ratio,
             width: window_width,
             height: (window_width as f32 / aspect_ratio) as u32,
             anti_aliasing: anti_aliasing,
-            render_4d: render_4d,
         };
     }
 }

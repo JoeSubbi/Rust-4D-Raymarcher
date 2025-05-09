@@ -12,13 +12,13 @@ pub mod rotor4;
 
 
 #[allow(dead_code)]
-const DEGREES_TO_RADIANS: f32 =  0.01745329;
+pub const DEGREES_TO_RADIANS: f32 =  0.01745329;
 
 #[allow(dead_code)]
-const RADIANS_TO_DEGREES: f32 = 57.29577951;
+pub const RADIANS_TO_DEGREES: f32 = 57.29577951;
 
 #[allow(dead_code)]
-const PI: f32 = 3.14159265358979323846264338327950;
+pub const PI: f32 = 3.14159265358979323846264338327950;
 
 #[allow(dead_code)]
 pub fn clamp(x: f32, min: f32, max: f32) -> f32

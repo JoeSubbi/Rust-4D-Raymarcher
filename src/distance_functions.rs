@@ -11,10 +11,10 @@ pub fn sdf_sphere<T: Vector>(p: T, centre: T, radius: f32) -> f32
 }
 
 #[allow(dead_code)]
-pub fn sdf_box3(p: Float3, centre: Float3, size: Float3) -> f32
+pub fn sdf_box3(p: Float3, centre: Float3, size: Float3, edge_radius: f32) -> f32
 {
     let p: Float3 = p-centre;
-    let q: Float3 = Float3::new(f32::abs(p.x), f32::abs(p.y), f32::abs(p.z)) - size;
+    let q: Float3 = Float3::new(f32::abs(p.x), f32::abs(p.y), f32::abs(p.z)) - size + edge_radius;
     
     return 
         Float3::new(f32::max(q.x, 0.0), f32::max(q.y, 0.0), f32::max(q.z, 0.0)).length() + 
@@ -23,14 +23,14 @@ pub fn sdf_box3(p: Float3, centre: Float3, size: Float3) -> f32
                 f32::max(q.y, q.z)
             ),
             0.0
-        )
+        ) - edge_radius;
 }
 
 #[allow(dead_code)]
-pub fn sdf_box4(p: Float4, centre: Float4, size: Float4) -> f32
+pub fn sdf_box4(p: Float4, centre: Float4, size: Float4, edge_radius: f32) -> f32
 {
     let p: Float4 = p-centre;
-    let q: Float4 = Float4::new(f32::abs(p.x), f32::abs(p.y), f32::abs(p.z), f32::abs(p.w)) - size;
+    let q: Float4 = Float4::new(f32::abs(p.x), f32::abs(p.y), f32::abs(p.z), f32::abs(p.w)) - size + edge_radius;
     
     return 
         Float4::new(f32::max(q.x, 0.0), f32::max(q.y, 0.0), f32::max(q.z, 0.0), f32::max(q.w, 0.0)).length() + 
@@ -41,5 +41,5 @@ pub fn sdf_box4(p: Float4, centre: Float4, size: Float4) -> f32
                 )
             ),
             0.0
-        );
+        ) - edge_radius;
 }
