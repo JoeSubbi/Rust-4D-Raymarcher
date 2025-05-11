@@ -2,7 +2,7 @@
 
 A 4D Raymarcher written in Rust: A project with the purpose of learning Rust by adapting some of the technologies from [4D Games](https://store.steampowered.com/app/2264190/4D_Games/).
 
-This project does no make use of shaders as this project was created with the intention of learning rust. The raymarcher uses multi-threading, but is of course not an efficient raymarcher without the GPU.
+This project does not make use of shaders as this project was created with the intention of learning rust. The raymarcher uses multi-threading, but is of course not an efficient raymarcher without the GPU, reaching up to 30fps on an AMD Ryzen 7.
 
 This project, like 4D Games, uses Rotors of Geometric Algebra to rotate these shapes without gimbal lock.
 
