@@ -182,7 +182,7 @@ fn render(canvas: &mut WindowCanvas, scene: &Scene, application: &Application) -
             for pixel in thread_handle.join().unwrap()
             {
                 canvas.set_draw_color(pixel.colour);
-                canvas.draw_point(Point::new(pixel.x as i32, pixel.y as i32)).expect("Unable to draw point to canvas");
+                canvas.draw_point(Point::new(pixel.x as i32, application.height as i32 - pixel.y as i32)).expect("Unable to draw point to canvas");
             }
         }
     });
