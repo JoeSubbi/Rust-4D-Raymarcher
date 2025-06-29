@@ -1,4 +1,4 @@
-name: Rust
+name: Build and Test
 
 on:
   workflow_dispatch:
@@ -17,6 +17,12 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+    - name: Install SDL2
+      run: sudo apt-get install libsdl2-dev
+    - name: Install SDL2-TTF
+      run: sudo apt-get install libsdl2-ttf-dev
+    - name: Install SDL2-Image
+      run: sudo apt-get install libsdl2-image-dev
     - name: Build
       run: cargo build --verbose
     - name: Run tests
